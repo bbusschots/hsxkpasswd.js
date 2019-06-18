@@ -1,0 +1,42 @@
+{
+  "name": "@bartificer/hsxkpasswd",
+  "version": "1.0.0",
+  "description": "A JavaScript port of the Perl module Crypt::HSXKPasswd",
+  "main": "dist/index.js",
+  "module": "dist/index.es.js",
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "./node_modules/rollup/bin/rollup -c",
+    "test": "./node_modules/.bin/qunit -c HSXKPasswd:./dist/index.js -d is:./node_modules/is_js _:./node_modules/lodash -t ./test/tests.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bbusschots/hsxkpasswd.js.git"
+  },
+  "keywords": [
+    "Password",
+    "Security"
+  ],
+  "author": "Bart Busschots",
+  "license": "BSD-2-Clause",
+  "bugs": {
+    "url": "https://github.com/bbusschots/hsxkpasswd.js/issues"
+  },
+  "homepage": "https://github.com/bbusschots/hsxkpasswd.js#readme",
+  "devDependencies": {
+    "lodash": "^4.17.11",
+    "node-qunit": "^1.0.0",
+    "rollup": "^1.15.6",
+    "rollup-plugin-commonjs": "^10.0.0",
+    "rollup-plugin-node-resolve": "^5.0.3"
+  },
+  "dependencies": {
+    "is_js": "^0.9.0",
+    "lodash-es": "^4.17.11"
+  }
+}
