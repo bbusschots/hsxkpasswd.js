@@ -18870,6 +18870,31 @@ class Config{
     }
     
     /**
+     * @type {Object}
+     */
+    get all(){
+        return {
+            allow_accents: this.allow_accents,
+            case_transform: this.case_transform,
+            character_substitutions: this.character_substitutions,
+            num_words: this.num_words,
+            pad_to_length: this.pad_to_length,
+            padding_alphabet: this.padding_alphabet,
+            padding_character: this.padding_character,
+            padding_characters_before: this.padding_characters_before,
+            padding_characters_after: this.padding_characters_after,
+            padding_digits_before: this.padding_digits_before,
+            padding_digits_after: this.padding_digits_after,
+            padding_type: this.padding_type,
+            separator_alphabet: this.separator_alphabet,
+            separator_character: this.separator_character,
+            symbol_alphabet: this.symbol_alphabet,
+            word_length_min: this.word_length_min,
+            word_length_max: this.word_length_max
+        };
+    }
+    
+    /**
      * @type {boolean}
      */
     get allow_accents(){
@@ -18889,7 +18914,7 @@ class Config{
      * @type {Object}
      */
     get character_substitutions(){
-        if(is_object(this._settings.character_substitutions)){
+        if(is.object(this._settings.character_substitutions)){
             return lodash.cloneDeep(this._settings.character_substitutions);
         }
         return {};
