@@ -32,3 +32,14 @@ QUnit.module('HSXKPasswd.Config Class', function(){
         a.deepEqual(defaultConfig.all, expectedSettings, 'generated config with expected settings');
     });
 });
+
+QUnit.module('HSXKPasswd.Dictionary Class', function(){
+    QUnit.test('sanetizer function', function(a){
+        a.expect(2);
+        
+        a.ok(is.function(HSXKPasswd.Dictionary.sanitize), 'function exists');
+        
+        // test the sanetisation
+        a.equal(HSXKPasswd.Dictionary.sanitize('aeiouáéíóúçö$£\n\t -_'), 'aeiouáéíóúçö-', 'expected characters removed and retained');
+    });
+});

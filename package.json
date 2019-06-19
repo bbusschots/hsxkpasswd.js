@@ -37,6 +37,7 @@
   },
   "dependencies": {
     "is_js": "^0.9.0",
-    "lodash-es": "^4.17.11"
+    "lodash-es": "^4.17.11",
+    "xregexp": "^4.2.4"
   }
 }
