@@ -34,12 +34,12 @@ QUnit.module('HSXKPasswd.Config Class', function(){
 });
 
 QUnit.module('HSXKPasswd.Dictionary Class', function(){
-    QUnit.test('sanetizer function', function(a){
+    QUnit.test('base sanetizer function', function(a){
         a.expect(2);
         
-        a.ok(is.function(HSXKPasswd.Dictionary.sanitize), 'function exists');
+        a.ok(is.function(HSXKPasswd.Dictionary.baseSanitize), 'function exists');
         
         // test the sanetisation
-        a.equal(HSXKPasswd.Dictionary.sanitize('aeiouáéíóúçö$£\n\t -_'), 'aeiouáéíóúçö-', 'expected characters removed and retained');
+        a.equal(HSXKPasswd.Dictionary.baseSanitize('aeiouáéíóúçö$£\n\t -_'), 'aeiouáéíóúçö-', 'expected characters removed and retained');
     });
 });
