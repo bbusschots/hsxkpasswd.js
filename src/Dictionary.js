@@ -1,3 +1,4 @@
+import diacritics from 'diacritics';
 import is from 'is_js';
 import XRegExp from 'xregexp';
 
@@ -24,7 +25,7 @@ class Dictionary{
      * @return {string} The sanitized string.
      * @note Using XRegExp for now until ES2018's Unicode property macting in REs is supported in FireFox & Edge.
      */
-    static baseSanitize(inputString){
+    static baseSanitizer(inputString){
         let output = String(inputString); // force to string
         
         // remove all non-word characters
@@ -32,6 +33,16 @@ class Dictionary{
         
         // return the sanetized string
         return output;
+    }
+    
+    /**
+     * Strip diacritics from a string. I.e. 'cliché' becomes 'cliche'.
+     *
+     * @param {string} inputString
+     * @return {string}
+     */
+    static stripDiacritics(inputString){
+        return diacritics.remove(inputString);
     }
     
     /**
@@ -62,14 +73,14 @@ class Dictionary{
         
         // process the options
         if(is.not.object(options)) throw new TypeError('if passed, options must be an object');
-        if(is.defined(options.sanitizer)){
+        if(is.not.undefined(options.sanitizer)){
             if(is.function(options.sanitizer)){
                 this._sanitizers.push(options.sanitizer);
             }else{
                 throw new TypeError('if passed, options.sanitizer must be a callback');
             }
         }
-        if(is.defined(options.sanitizers)){
+        if(is.not.undefined(options.sanitizers)){
             if(is.array(options.sanitizers) && is.all.function(options.sanitizers)){
                 this._sanitizers.push(...options.sanitizers);
             }else{
@@ -78,13 +89,20 @@ class Dictionary{
         }
         
         // load any provided words
-        if(is.defined(wordSource)){
+        if(is.not.undefined(wordSource)){
             if(is.array(wordSource) || is.function(wordSource)){
                 this.loadWordsSync(wordSource);
             }else if(is.object(wordSource) && is.function(wordSource.then)){
                 this.loadWordsAsync(wordSource);
             }
         }
+    }
+    
+    /**
+     * @type {String[]}
+     */
+    get allWords(){
+        return [...this._words];
     }
     
     /**
@@ -109,16 +127,9 @@ class Dictionary{
     }
     
     /**
-     * @type {String[]}
-     */
-    get words(){
-        return [...this._words];
-    }
-    
-    /**
      * Build a word list from an array of strings.
      *
-     * Each word in the array will be sanitized before being included in the list, and words that are too short will be omitted from the list.
+     * Each word in the array will be sanitized before being included in the list, and words that are too short will be omitted from the list. Anything in the array that is not a string will be ignored.
      *
      * @param {String[]} words
      * @return {Object} Returns an object indexed by `words` & `rejectedWords`.
@@ -126,7 +137,7 @@ class Dictionary{
      */
     buildWordList(words){
         // validate args
-        if(!(is.array(words) && is.all.string(words))){
+        if(is.not.array(words)){
             throw new TypeError('must pass an array of strings');
         }
         
@@ -136,17 +147,27 @@ class Dictionary{
             rejectedWords: []
         };
         for(const word of words){
+            if(is.not.string(word)){
+                ans.rejectedWords.push(word);
+                continue;
+            }
             let sanitizedWord = '';
             try{
                 sanitizedWord = this.sanitize(word);
             }catch(err){
                 ans.rejectedWords.push(word);
+                continue;
             }
             if(sanitizedWord.length < Dictionary.MIN_WORD_LENGTH){
                 ans.rejectedWords.push(word);
+                continue;
             }
             ans.words.push(sanitizedWord);
         }
+        
+        // sort and de-duplicate the words
+        ans.words = _.uniq(ans.words);
+        ans.words.sort();
         
         // return the result
         return ans;
@@ -166,12 +187,9 @@ class Dictionary{
      */
     loadWordsSync(wordSource){
         // get the words from the word source
-        if(is.no.defined(wordSource)) throw new TypeError('word source required, can be an array of strings or a callback that returns an array of strings');
+        if(is.undefined(wordSource)) throw new TypeError('word source required, can be an array of strings or a callback that returns an array of strings');
         let words = [];
         if(is.array(wordSource)){
-            if(!is.all.string(wordSource)){
-                throw new TypeError('word source array can only contain strings');
-            }
             words = wordSource;
         }else if(is.function(wordSource)){
             words = wordSource();
@@ -252,6 +270,51 @@ class Dictionary{
     }
     
     /**
+     * Get the words for a given set of constraints.
+     *
+     * @param {Object} constraints - An object specifting the constraints. Usually an HSXKPasswd Config object.
+     * @param {number} constraints.word_length_min - the minimum length of words to include.
+     * @param {number} constraints.word_length_max - the maximum length of words to include.
+     * @param {boolean} [constraints.allow_accents=false] - whether or not accents should be stripped from accented characters. Defaults to false.
+     * @return {String[]}
+     * @throws {TypeError} A Type Error is thrown on invalid args.
+     */
+    filteredWords(constraints){
+        // validate constraints
+        if(is.not.object(constraints)) throw new TypeError('constraints are required and must be passed as an object');
+        if(!(is.integer(constraints.word_length_min) && is.above(constraints.word_length_min, Dictonary.MIN_WORD_LENGTH))){
+            throw new TypeError(`constraints.word_length_min must be an integer greater than or equal to ${Dictonary.MIN_WORD_LENGTH} and less than or equal to word_length_max`);
+        }
+        if(!(is.integer(constraints.word_length_max) && is.above(constraints.word_length_max, Dictonary.MIN_WORD_LENGTH))){
+            throw new TypeError(`constraints.word_length_max must be an integer greater than or equal to ${Dictonary.MIN_WORD_LENGTH} and greater than or equal to word_length_min`);
+        }
+        if(constraints.word_length_min > constraints.word_length_max){
+            throw new TypeError('constraints.word_length_min must be less than or equal to constraints.word_length_max');
+        }
+        const validatedConstraints = {
+            word_length_min: constraints.word_length_min,
+            word_length_max: constraints.word_length_max,
+            allow_accents: is.undefined(constraints.allow_accents) ? false : constraints.allow_accents ? true : false
+        };
+        
+        // loop through all words and test against criteria
+        const fiteredWords = [];
+        for(const word of this._words){
+            if(word.length < validatedConstraints.word_length_min) continue;
+            if(word.length > validatedConstraints.word_length_max) continue;
+            if(validatedConstraints.allow_accents){
+                fiteredWords.push(word);
+            }else{
+                // strip diacritics then store
+                fiteredWords.push(Dictionary.stripDiacritics(word));
+            }
+        }
+        
+        // return the filtered words
+        return fiteredWords;
+    }
+    
+    /**
      * Sanitise a string. This function will be called on each word before it is added to the word list.
      *
      * This function executes all custom sanitizers on the passed string, and then the base sanitzer.
@@ -268,7 +331,7 @@ class Dictionary{
         }
         
         // apply the base sanitzer and return
-        return this.constructor.baseSanitzer(output);
+        return Dictionary.baseSanitizer(output);
     }
 }
 

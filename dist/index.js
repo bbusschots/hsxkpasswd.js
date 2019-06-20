@@ -5070,7 +5070,7 @@
     var DataView = getNative(root, 'DataView');
 
     /* Built-in method references that are verified to be native. */
-    var Promise = getNative(root, 'Promise');
+    var Promise$1 = getNative(root, 'Promise');
 
     /* Built-in method references that are verified to be native. */
     var Set = getNative(root, 'Set');
@@ -5087,7 +5087,7 @@
     /** Used to detect maps, sets, and weakmaps. */
     var dataViewCtorString = toSource(DataView),
         mapCtorString = toSource(Map),
-        promiseCtorString = toSource(Promise),
+        promiseCtorString = toSource(Promise$1),
         setCtorString = toSource(Set),
         weakMapCtorString = toSource(WeakMap);
 
@@ -5103,7 +5103,7 @@
     // Fallback for data views, maps, sets, and weak maps in IE 11 and promises in Node.js < 6.
     if ((DataView && getTag(new DataView(new ArrayBuffer(1))) != dataViewTag$1) ||
         (Map && getTag(new Map) != mapTag$1) ||
-        (Promise && getTag(Promise.resolve()) != promiseTag) ||
+        (Promise$1 && getTag(Promise$1.resolve()) != promiseTag) ||
         (Set && getTag(new Set) != setTag$1) ||
         (WeakMap && getTag(new WeakMap) != weakMapTag$1)) {
       getTag = function(value) {
@@ -19052,6 +19052,329 @@
         get wordLengthMax(){ return this.word_length_max; }
     }
 
+    var remove$1 = removeDiacritics;
+
+    var replacementList = [
+      {
+        base: ' ',
+        chars: "\u00A0",
+      }, {
+        base: '0',
+        chars: "\u07C0",
+      }, {
+        base: 'A',
+        chars: "\u24B6\uFF21\u00C0\u00C1\u00C2\u1EA6\u1EA4\u1EAA\u1EA8\u00C3\u0100\u0102\u1EB0\u1EAE\u1EB4\u1EB2\u0226\u01E0\u00C4\u01DE\u1EA2\u00C5\u01FA\u01CD\u0200\u0202\u1EA0\u1EAC\u1EB6\u1E00\u0104\u023A\u2C6F",
+      }, {
+        base: 'AA',
+        chars: "\uA732",
+      }, {
+        base: 'AE',
+        chars: "\u00C6\u01FC\u01E2",
+      }, {
+        base: 'AO',
+        chars: "\uA734",
+      }, {
+        base: 'AU',
+        chars: "\uA736",
+      }, {
+        base: 'AV',
+        chars: "\uA738\uA73A",
+      }, {
+        base: 'AY',
+        chars: "\uA73C",
+      }, {
+        base: 'B',
+        chars: "\u24B7\uFF22\u1E02\u1E04\u1E06\u0243\u0181",
+      }, {
+        base: 'C',
+        chars: "\u24b8\uff23\uA73E\u1E08\u0106\u0043\u0108\u010A\u010C\u00C7\u0187\u023B",
+      }, {
+        base: 'D',
+        chars: "\u24B9\uFF24\u1E0A\u010E\u1E0C\u1E10\u1E12\u1E0E\u0110\u018A\u0189\u1D05\uA779",
+      }, {
+        base: 'Dh',
+        chars: "\u00D0",
+      }, {
+        base: 'DZ',
+        chars: "\u01F1\u01C4",
+      }, {
+        base: 'Dz',
+        chars: "\u01F2\u01C5",
+      }, {
+        base: 'E',
+        chars: "\u025B\u24BA\uFF25\u00C8\u00C9\u00CA\u1EC0\u1EBE\u1EC4\u1EC2\u1EBC\u0112\u1E14\u1E16\u0114\u0116\u00CB\u1EBA\u011A\u0204\u0206\u1EB8\u1EC6\u0228\u1E1C\u0118\u1E18\u1E1A\u0190\u018E\u1D07",
+      }, {
+        base: 'F',
+        chars: "\uA77C\u24BB\uFF26\u1E1E\u0191\uA77B",
+      }, {
+        base: 'G',
+        chars: "\u24BC\uFF27\u01F4\u011C\u1E20\u011E\u0120\u01E6\u0122\u01E4\u0193\uA7A0\uA77D\uA77E\u0262",
+      }, {
+        base: 'H',
+        chars: "\u24BD\uFF28\u0124\u1E22\u1E26\u021E\u1E24\u1E28\u1E2A\u0126\u2C67\u2C75\uA78D",
+      }, {
+        base: 'I',
+        chars: "\u24BE\uFF29\xCC\xCD\xCE\u0128\u012A\u012C\u0130\xCF\u1E2E\u1EC8\u01CF\u0208\u020A\u1ECA\u012E\u1E2C\u0197",
+      }, {
+        base: 'J',
+        chars: "\u24BF\uFF2A\u0134\u0248\u0237",
+      }, {
+        base: 'K',
+        chars: "\u24C0\uFF2B\u1E30\u01E8\u1E32\u0136\u1E34\u0198\u2C69\uA740\uA742\uA744\uA7A2",
+      }, {
+        base: 'L',
+        chars: "\u24C1\uFF2C\u013F\u0139\u013D\u1E36\u1E38\u013B\u1E3C\u1E3A\u0141\u023D\u2C62\u2C60\uA748\uA746\uA780",
+      }, {
+        base: 'LJ',
+        chars: "\u01C7",
+      }, {
+        base: 'Lj',
+        chars: "\u01C8",
+      }, {
+        base: 'M',
+        chars: "\u24C2\uFF2D\u1E3E\u1E40\u1E42\u2C6E\u019C\u03FB",
+      }, {
+        base: 'N',
+        chars: "\uA7A4\u0220\u24C3\uFF2E\u01F8\u0143\xD1\u1E44\u0147\u1E46\u0145\u1E4A\u1E48\u019D\uA790\u1D0E",
+      }, {
+        base: 'NJ',
+        chars: "\u01CA",
+      }, {
+        base: 'Nj',
+        chars: "\u01CB",
+      }, {
+        base: 'O',
+        chars: "\u24C4\uFF2F\xD2\xD3\xD4\u1ED2\u1ED0\u1ED6\u1ED4\xD5\u1E4C\u022C\u1E4E\u014C\u1E50\u1E52\u014E\u022E\u0230\xD6\u022A\u1ECE\u0150\u01D1\u020C\u020E\u01A0\u1EDC\u1EDA\u1EE0\u1EDE\u1EE2\u1ECC\u1ED8\u01EA\u01EC\xD8\u01FE\u0186\u019F\uA74A\uA74C",
+      }, {
+        base: 'OE',
+        chars: "\u0152",
+      }, {
+        base: 'OI',
+        chars: "\u01A2",
+      }, {
+        base: 'OO',
+        chars: "\uA74E",
+      }, {
+        base: 'OU',
+        chars: "\u0222",
+      }, {
+        base: 'P',
+        chars: "\u24C5\uFF30\u1E54\u1E56\u01A4\u2C63\uA750\uA752\uA754",
+      }, {
+        base: 'Q',
+        chars: "\u24C6\uFF31\uA756\uA758\u024A",
+      }, {
+        base: 'R',
+        chars: "\u24C7\uFF32\u0154\u1E58\u0158\u0210\u0212\u1E5A\u1E5C\u0156\u1E5E\u024C\u2C64\uA75A\uA7A6\uA782",
+      }, {
+        base: 'S',
+        chars: "\u24C8\uFF33\u1E9E\u015A\u1E64\u015C\u1E60\u0160\u1E66\u1E62\u1E68\u0218\u015E\u2C7E\uA7A8\uA784",
+      }, {
+        base: 'T',
+        chars: "\u24C9\uFF34\u1E6A\u0164\u1E6C\u021A\u0162\u1E70\u1E6E\u0166\u01AC\u01AE\u023E\uA786",
+      }, {
+        base: 'Th',
+        chars: "\u00DE",
+      }, {
+        base: 'TZ',
+        chars: "\uA728",
+      }, {
+        base: 'U',
+        chars: "\u24CA\uFF35\xD9\xDA\xDB\u0168\u1E78\u016A\u1E7A\u016C\xDC\u01DB\u01D7\u01D5\u01D9\u1EE6\u016E\u0170\u01D3\u0214\u0216\u01AF\u1EEA\u1EE8\u1EEE\u1EEC\u1EF0\u1EE4\u1E72\u0172\u1E76\u1E74\u0244",
+      }, {
+        base: 'V',
+        chars: "\u24CB\uFF36\u1E7C\u1E7E\u01B2\uA75E\u0245",
+      }, {
+        base: 'VY',
+        chars: "\uA760",
+      }, {
+        base: 'W',
+        chars: "\u24CC\uFF37\u1E80\u1E82\u0174\u1E86\u1E84\u1E88\u2C72",
+      }, {
+        base: 'X',
+        chars: "\u24CD\uFF38\u1E8A\u1E8C",
+      }, {
+        base: 'Y',
+        chars: "\u24CE\uFF39\u1EF2\xDD\u0176\u1EF8\u0232\u1E8E\u0178\u1EF6\u1EF4\u01B3\u024E\u1EFE",
+      }, {
+        base: 'Z',
+        chars: "\u24CF\uFF3A\u0179\u1E90\u017B\u017D\u1E92\u1E94\u01B5\u0224\u2C7F\u2C6B\uA762",
+      }, {
+        base: 'a',
+        chars: "\u24D0\uFF41\u1E9A\u00E0\u00E1\u00E2\u1EA7\u1EA5\u1EAB\u1EA9\u00E3\u0101\u0103\u1EB1\u1EAF\u1EB5\u1EB3\u0227\u01E1\u00E4\u01DF\u1EA3\u00E5\u01FB\u01CE\u0201\u0203\u1EA1\u1EAD\u1EB7\u1E01\u0105\u2C65\u0250\u0251",
+      }, {
+        base: 'aa',
+        chars: "\uA733",
+      }, {
+        base: 'ae',
+        chars: "\u00E6\u01FD\u01E3",
+      }, {
+        base: 'ao',
+        chars: "\uA735",
+      }, {
+        base: 'au',
+        chars: "\uA737",
+      }, {
+        base: 'av',
+        chars: "\uA739\uA73B",
+      }, {
+        base: 'ay',
+        chars: "\uA73D",
+      }, {
+        base: 'b',
+        chars: "\u24D1\uFF42\u1E03\u1E05\u1E07\u0180\u0183\u0253\u0182",
+      }, {
+        base: 'c',
+        chars: "\uFF43\u24D2\u0107\u0109\u010B\u010D\u00E7\u1E09\u0188\u023C\uA73F\u2184",
+      }, {
+        base: 'd',
+        chars: "\u24D3\uFF44\u1E0B\u010F\u1E0D\u1E11\u1E13\u1E0F\u0111\u018C\u0256\u0257\u018B\u13E7\u0501\uA7AA",
+      }, {
+        base: 'dh',
+        chars: "\u00F0",
+      }, {
+        base: 'dz',
+        chars: "\u01F3\u01C6",
+      }, {
+        base: 'e',
+        chars: "\u24D4\uFF45\u00E8\u00E9\u00EA\u1EC1\u1EBF\u1EC5\u1EC3\u1EBD\u0113\u1E15\u1E17\u0115\u0117\u00EB\u1EBB\u011B\u0205\u0207\u1EB9\u1EC7\u0229\u1E1D\u0119\u1E19\u1E1B\u0247\u01DD",
+      }, {
+        base: 'f',
+        chars: "\u24D5\uFF46\u1E1F\u0192",
+      }, {
+        base: 'ff',
+        chars: "\uFB00",
+      }, {
+        base: 'fi',
+        chars: "\uFB01",
+      }, {
+        base: 'fl',
+        chars: "\uFB02",
+      }, {
+        base: 'ffi',
+        chars: "\uFB03",
+      }, {
+        base: 'ffl',
+        chars: "\uFB04",
+      }, {
+        base: 'g',
+        chars: "\u24D6\uFF47\u01F5\u011D\u1E21\u011F\u0121\u01E7\u0123\u01E5\u0260\uA7A1\uA77F\u1D79",
+      }, {
+        base: 'h',
+        chars: "\u24D7\uFF48\u0125\u1E23\u1E27\u021F\u1E25\u1E29\u1E2B\u1E96\u0127\u2C68\u2C76\u0265",
+      }, {
+        base: 'hv',
+        chars: "\u0195",
+      }, {
+        base: 'i',
+        chars: "\u24D8\uFF49\xEC\xED\xEE\u0129\u012B\u012D\xEF\u1E2F\u1EC9\u01D0\u0209\u020B\u1ECB\u012F\u1E2D\u0268\u0131",
+      }, {
+        base: 'j',
+        chars: "\u24D9\uFF4A\u0135\u01F0\u0249",
+      }, {
+        base: 'k',
+        chars: "\u24DA\uFF4B\u1E31\u01E9\u1E33\u0137\u1E35\u0199\u2C6A\uA741\uA743\uA745\uA7A3",
+      }, {
+        base: 'l',
+        chars: "\u24DB\uFF4C\u0140\u013A\u013E\u1E37\u1E39\u013C\u1E3D\u1E3B\u017F\u0142\u019A\u026B\u2C61\uA749\uA781\uA747\u026D",
+      }, {
+        base: 'lj',
+        chars: "\u01C9",
+      }, {
+        base: 'm',
+        chars: "\u24DC\uFF4D\u1E3F\u1E41\u1E43\u0271\u026F",
+      }, {
+        base: 'n',
+        chars: "\u24DD\uFF4E\u01F9\u0144\xF1\u1E45\u0148\u1E47\u0146\u1E4B\u1E49\u019E\u0272\u0149\uA791\uA7A5\u043B\u0509",
+      }, {
+        base: 'nj',
+        chars: "\u01CC",
+      }, {
+        base: 'o',
+        chars: "\u24DE\uFF4F\xF2\xF3\xF4\u1ED3\u1ED1\u1ED7\u1ED5\xF5\u1E4D\u022D\u1E4F\u014D\u1E51\u1E53\u014F\u022F\u0231\xF6\u022B\u1ECF\u0151\u01D2\u020D\u020F\u01A1\u1EDD\u1EDB\u1EE1\u1EDF\u1EE3\u1ECD\u1ED9\u01EB\u01ED\xF8\u01FF\uA74B\uA74D\u0275\u0254\u1D11",
+      }, {
+        base: 'oe',
+        chars: "\u0153",
+      }, {
+        base: 'oi',
+        chars: "\u01A3",
+      }, {
+        base: 'oo',
+        chars: "\uA74F",
+      }, {
+        base: 'ou',
+        chars: "\u0223",
+      }, {
+        base: 'p',
+        chars: "\u24DF\uFF50\u1E55\u1E57\u01A5\u1D7D\uA751\uA753\uA755\u03C1",
+      }, {
+        base: 'q',
+        chars: "\u24E0\uFF51\u024B\uA757\uA759",
+      }, {
+        base: 'r',
+        chars: "\u24E1\uFF52\u0155\u1E59\u0159\u0211\u0213\u1E5B\u1E5D\u0157\u1E5F\u024D\u027D\uA75B\uA7A7\uA783",
+      }, {
+        base: 's',
+        chars: "\u24E2\uFF53\u015B\u1E65\u015D\u1E61\u0161\u1E67\u1E63\u1E69\u0219\u015F\u023F\uA7A9\uA785\u1E9B\u0282",
+      }, {
+        base: 'ss',
+        chars: "\xDF",
+      }, {
+        base: 't',
+        chars: "\u24E3\uFF54\u1E6B\u1E97\u0165\u1E6D\u021B\u0163\u1E71\u1E6F\u0167\u01AD\u0288\u2C66\uA787",
+      }, {
+        base: 'th',
+        chars: "\u00FE",
+      }, {
+        base: 'tz',
+        chars: "\uA729",
+      }, {
+        base: 'u',
+        chars: "\u24E4\uFF55\xF9\xFA\xFB\u0169\u1E79\u016B\u1E7B\u016D\xFC\u01DC\u01D8\u01D6\u01DA\u1EE7\u016F\u0171\u01D4\u0215\u0217\u01B0\u1EEB\u1EE9\u1EEF\u1EED\u1EF1\u1EE5\u1E73\u0173\u1E77\u1E75\u0289",
+      }, {
+        base: 'v',
+        chars: "\u24E5\uFF56\u1E7D\u1E7F\u028B\uA75F\u028C",
+      }, {
+        base: 'vy',
+        chars: "\uA761",
+      }, {
+        base: 'w',
+        chars: "\u24E6\uFF57\u1E81\u1E83\u0175\u1E87\u1E85\u1E98\u1E89\u2C73",
+      }, {
+        base: 'x',
+        chars: "\u24E7\uFF58\u1E8B\u1E8D",
+      }, {
+        base: 'y',
+        chars: "\u24E8\uFF59\u1EF3\xFD\u0177\u1EF9\u0233\u1E8F\xFF\u1EF7\u1E99\u1EF5\u01B4\u024F\u1EFF",
+      }, {
+        base: 'z',
+        chars: "\u24E9\uFF5A\u017A\u1E91\u017C\u017E\u1E93\u1E95\u01B6\u0225\u0240\u2C6C\uA763",
+      }
+    ];
+
+    var diacriticsMap = {};
+    for (var i = 0; i < replacementList.length; i += 1) {
+      var chars = replacementList[i].chars;
+      for (var j = 0; j < chars.length; j += 1) {
+        diacriticsMap[chars[j]] = replacementList[i].base;
+      }
+    }
+
+    function removeDiacritics(str) {
+      return str.replace(/[^\u0000-\u007e]/g, function(c) {
+        return diacriticsMap[c] || c;
+      });
+    }
+
+    var replacementList_1 = replacementList;
+    var diacriticsMap_1 = diacriticsMap;
+
+    var diacritics = {
+    	remove: remove$1,
+    	replacementList: replacementList_1,
+    	diacriticsMap: diacriticsMap_1
+    };
+
     var interopRequireDefault = createCommonjsModule(function (module) {
     function _interopRequireDefault(obj) {
       return obj && obj.__esModule ? obj : {
@@ -19611,8 +19934,8 @@
       'SVGPathSegList,SVGPointList,SVGStringList,SVGTransformList,SourceBufferList,StyleSheetList,TextTrackCueList,' +
       'TextTrackList,TouchList').split(',');
 
-    for (var i = 0; i < DOMIterables.length; i++) {
-      var NAME = DOMIterables[i];
+    for (var i$1 = 0; i$1 < DOMIterables.length; i$1++) {
+      var NAME = DOMIterables[i$1];
       var Collection = _global[NAME];
       var proto = Collection && Collection.prototype;
       if (proto && !proto[TO_STRING_TAG]) _hide(proto, TO_STRING_TAG, NAME);
@@ -24818,17 +25141,25 @@
      */
     class Dictionary{
         /**
-        * The base word sanitization function.
-        *
-        * This function performs the following actions:
-        * 1. remove all non-word characters
-        *
-        * For now, this is the only sanetization that will be performed on each word as its added to the word list, but in future its envisaged that additional sanetizers could be registered. Even then, this santeizer would always be applied first.
-        *
-        * @param {string} inputString - The string to be sanitized
-        * @return {string} The sanitized string.
-        */
-        static sanitize(inputString){
+         * @type {number}
+         */
+        static get MIN_WORD_LENGTH(){
+            return 4;
+        }
+        
+        /**
+         * The base word sanitization function.
+         *
+         * This function performs the following actions:
+         * 1. remove all non-word characters except the simple dash (accented characters are retained)
+         *
+         * Regardless of how many additional sanitizers a dictionary has, this function is always called as the final sanitizer by the instance sanitizer function.
+         *
+         * @param {string} inputString - The string to be sanitized
+         * @return {string} The sanitized string.
+         * @note Using XRegExp for now until ES2018's Unicode property macting in REs is supported in FireFox & Edge.
+         */
+        static baseSanitizer(inputString){
             let output = String(inputString); // force to string
             
             // remove all non-word characters
@@ -24839,26 +25170,302 @@
         }
         
         /**
-         * @param {(String[]|function)} wordSource - the source for the words, either an array of strings, or, a callback that returns an array of strings or a promise to an array of strings.
+         * Strip diacritics from a string. I.e. 'cliché' becomes 'cliche'.
+         *
+         * @param {string} inputString
+         * @return {string}
+         */
+        static stripDiacritics(inputString){
+            return diacritics.remove(inputString);
+        }
+        
+        /**
+         * @param {(String[]|function|Promise)} [wordSource] - The source for the words.
+         *
+         * The source can be one of:
+         * 1. An array of strings
+         * 2. A callback that returns an array of strings
+         * 3. A Promose for an array of strings.
+         *
+         * If the source is a promise the words are loaded asynchronously, otherwise they are loaded synchronously.
+         * 
+         * @param {Object} [options={}] - An optional options object.
+         * @param {function} [options.sanitizer] - An additional sanitizer to be run before base sanitizer. Will be called with a string as an argument, and must return a string.
+         * @param {function[]} [options.sanitizers] - An array of additional sanitizers to be run befor ethe base sanitizer. Will be called with a string as an argument, and must return a string.
          * @throws {TypeError} Throws a type error on invalid args
          */
-        constructor(wordSource){
-            this._ready = false;
-            this._wordFetcher = null;
+        constructor(wordSource, options={}){
+            this._words = [];
+            this._sanitizers = [];
+            this._wordsPromise = null;
+            this._loadInProgress = false;
+            this._lastLoadStats = {
+                numLoaded: 0,
+                numRejected: 0,
+                rejectedWords: []
+            };
+            
+            // process the options
+            if(is.not.object(options)) throw new TypeError('if passed, options must be an object');
+            if(is.not.undefined(options.sanitizer)){
+                if(is.function(options.sanitizer)){
+                    this._sanitizers.push(options.sanitizer);
+                }else{
+                    throw new TypeError('if passed, options.sanitizer must be a callback');
+                }
+            }
+            if(is.not.undefined(options.sanitizers)){
+                if(is.array(options.sanitizers) && is.all.function(options.sanitizers)){
+                    this._sanitizers.push(...options.sanitizers);
+                }else{
+                    throw new TypeError('if passed, options.sanitizers must be an array of callbacks');
+                }
+            }
+            
+            // load any provided words
+            if(is.not.undefined(wordSource)){
+                if(is.array(wordSource) || is.function(wordSource)){
+                    this.loadWordsSync(wordSource);
+                }else if(is.object(wordSource) && is.function(wordSource.then)){
+                    this.loadWordsAsync(wordSource);
+                }
+            }
+        }
+        
+        /**
+         * @type {String[]}
+         */
+        get allWords(){
+            return [...this._words];
+        }
+        
+        /**
+         * @type {Object}
+         */
+        get lastLoadStats(){
+            return _.cloneDeep(this._lastLoadStats);
+        }
+        
+        /**
+         * @type {boolean}
+         */
+        get ready(){
+            return this._loadInProgress === false && this._words.length >= 0;
+        }
+        
+        /**
+         * @type {function[]}
+         */
+        get sanitizers(){
+            return [...this._sanitizers];
+        }
+        
+        /**
+         * Build a word list from an array of strings.
+         *
+         * Each word in the array will be sanitized before being included in the list, and words that are too short will be omitted from the list. Anything in the array that is not a string will be ignored.
+         *
+         * @param {String[]} words
+         * @return {Object} Returns an object indexed by `words` & `rejectedWords`.
+         * @throws {TypeError} A type error is thrown if invalid arguments are passed.
+         */
+        buildWordList(words){
+            // validate args
+            if(is.not.array(words)){
+                throw new TypeError('must pass an array of strings');
+            }
+            
+            // process the words
+            const ans = {
+                words: [],
+                rejectedWords: []
+            };
+            for(const word of words){
+                if(is.not.string(word)){
+                    ans.rejectedWords.push(word);
+                    continue;
+                }
+                let sanitizedWord = '';
+                try{
+                    sanitizedWord = this.sanitize(word);
+                }catch(err){
+                    ans.rejectedWords.push(word);
+                    continue;
+                }
+                if(sanitizedWord.length < Dictionary.MIN_WORD_LENGTH){
+                    ans.rejectedWords.push(word);
+                    continue;
+                }
+                ans.words.push(sanitizedWord);
+            }
+            
+            // sort and de-duplicate the words
+            ans.words = _.uniq(ans.words);
+            ans.words.sort();
+            
+            // return the result
+            return ans;
+        }
+        
+        /**
+         * Synchronously Load words into the dictionary, replacing any existing words.
+         *
+         * Each word will be sanitized, and words that don't meet the minimum length or throw an error during sanitation will be rejected.
+         *
+         * @param {(String[]|function|Promise)} wordSource - The source for the words. Can be:
+         * 1. An array of strings
+         * 2. A callback that returns an array of strings
+         * @return {Object} Returns an object indexed by `numLoaded`, `numRejected` & `rejectedWords`.
+         * @throws {TypeError} A Type Error is thrown if invalid args are passed.
+         * @throws {Error} An error is thrown if there is already a load in progress.
+         */
+        loadWordsSync(wordSource){
+            // get the words from the word source
+            if(is.undefined(wordSource)) throw new TypeError('word source required, can be an array of strings or a callback that returns an array of strings');
+            let words = [];
+            if(is.array(wordSource)){
+                words = wordSource;
+            }else if(is.function(wordSource)){
+                words = wordSource();
+                if(!(is.array(words) && is.all.string(words))){
+                    throw new TypeError('callback did not return an array of strings');
+                }
+            }
+            
+            // build a word list from the words
+            const wordList = this.buildWordList(words);
+            
+            // make sure there is not another load in progress
+            if(this._loadInProgress) throw new Error('another load is already in progress');
+            
+            // store the words + stats
+            const stats = {
+                numLoaded: wordList.words.length,
+                numRejected: wordList.rejectedWords.length,
+                rejectedWords: wordList.rejectedWords
+            };
+            this._words = wordList.words;
+            this._lastLoadStats = stats;
+            this._wordsPromise = Promise.resolve(wordList.words);
+            
+            // return the stats
+            return _.cloneDeep(stats);
+        }
+        
+        /**
+         * Asynchronously Load words into the dictionary, replacing any existing words.
+         *
+         * Each word will be sanitized, and words that don't meet the minimum length or throw an error during sanitation will be rejected.
+         *
+         * @param {(Promise} wordsPromise - A promise for an array of Strings.
+         * @return {Object} Returns a promise for an object indexed by `numLoaded`, `numRejected` & `rejectedWords`.
+         * @throws {TypeError} A Type Error is thrown if invalid args are passed.
+         * @throws {Error} An error is thrown if there is already a load in progress.
+         */
+        async loadWordsAsync(wordsPromise){
+            // if there's already another load in progress, throw an error
+            if(this._loadInProgress){
+                throw new Error('load already in progress');
+            }
+            
+            // mark a load as being in progress and blank the words list
+            this._loadInProgress = true;
             this._words = [];
             
-            // figure out where the words will come from
-            if(is.array(wordSource)){
-                // words coming from an array
-                
-                // make sure we got only strings
-                if(!is.all.string(wordSource)){
-                    throw new TypeError("word array must only contain strings");
+            // build a promise for a word list generated from the word source
+            const wordListPromise = wordsPromise.then(
+                (words)=>{ // resolved handler
+                    return this.buildWordList(words);
                 }
-                
-                // filter and store the strings
-                
+            );
+            
+            // build and store a promise for the words
+            this._wordsPromise = wordListPromise.then(
+                function(wordList){
+                    return wordList.words();
+                }
+            );
+            
+            // await the resolution of the word list promise
+            const wordList = await wordListPromise;
+            const stats = {
+                numLoaded: wordList.words.length,
+                numRejected: wordList.rejectedWords.length,
+                rejectedWords: wordList.rejectedWords
+            };
+            
+            // store the words + stats and mark the load as complete
+            this._words = wordList.words;
+            this._lastLoadStats = stats;
+            this._loadInProgress = false;
+            
+            // return the stats
+            return _.cloneDeep(stats);
+        }
+        
+        /**
+         * Get the words for a given set of constraints.
+         *
+         * @param {Object} constraints - An object specifting the constraints. Usually an HSXKPasswd Config object.
+         * @param {number} constraints.word_length_min - the minimum length of words to include.
+         * @param {number} constraints.word_length_max - the maximum length of words to include.
+         * @param {boolean} [constraints.allow_accents=false] - whether or not accents should be stripped from accented characters. Defaults to false.
+         * @return {String[]}
+         * @throws {TypeError} A Type Error is thrown on invalid args.
+         */
+        filteredWords(constraints){
+            // validate constraints
+            if(is.not.object(constraints)) throw new TypeError('constraints are required and must be passed as an object');
+            if(!(is.integer(constraints.word_length_min) && is.above(constraints.word_length_min, Dictonary.MIN_WORD_LENGTH))){
+                throw new TypeError(`constraints.word_length_min must be an integer greater than or equal to ${Dictonary.MIN_WORD_LENGTH} and less than or equal to word_length_max`);
             }
+            if(!(is.integer(constraints.word_length_max) && is.above(constraints.word_length_max, Dictonary.MIN_WORD_LENGTH))){
+                throw new TypeError(`constraints.word_length_max must be an integer greater than or equal to ${Dictonary.MIN_WORD_LENGTH} and greater than or equal to word_length_min`);
+            }
+            if(constraints.word_length_min > constraints.word_length_max){
+                throw new TypeError('constraints.word_length_min must be less than or equal to constraints.word_length_max');
+            }
+            const validatedConstraints = {
+                word_length_min: constraints.word_length_min,
+                word_length_max: constraints.word_length_max,
+                allow_accents: is.undefined(constraints.allow_accents) ? false : constraints.allow_accents ? true : false
+            };
+            
+            // loop through all words and test against criteria
+            const fiteredWords = [];
+            for(const word of this._words){
+                if(word.length < validatedConstraints.word_length_min) continue;
+                if(word.length > validatedConstraints.word_length_max) continue;
+                if(validatedConstraints.allow_accents){
+                    fiteredWords.push(word);
+                }else{
+                    // strip diacritics then store
+                    fiteredWords.push(Dictionary.stripDiacritics(word));
+                }
+            }
+            
+            // return the filtered words
+            return fiteredWords;
+        }
+        
+        /**
+         * Sanitise a string. This function will be called on each word before it is added to the word list.
+         *
+         * This function executes all custom sanitizers on the passed string, and then the base sanitzer.
+         *
+         * @param {string} inputString
+         * @return {string}
+         */
+        sanitize(inputString){
+            let output = inputString;
+            
+            // apply each sanitizer in turn
+            for(const sanitizer of this.sanitizers){
+                output = sanitizer(String(output));
+            }
+            
+            // apply the base sanitzer and return
+            return Dictionary.baseSanitizer(output);
         }
     }
 
