@@ -43,6 +43,17 @@ QUnit.module('HSXKPasswd.Dictionary Class', function(){
         a.equal(HSXKPasswd.Dictionary.baseSanitizer('aeiouáéíóúçö$£\n\t -_'), 'aeiouáéíóúçö-', 'expected characters removed and retained');
     });
     
+    QUnit.test('default dictionary builder', function(a){
+        a.expect(3);
+        
+        a.ok(is.function(HSXKPasswd.Dictionary.defaultDictionary), 'function exists');
+        
+        // make sure a dictionary actually gets built
+        const defaultDict = HSXKPasswd.Dictionary.defaultDictionary();
+        a.ok(defaultDict instanceof HSXKPasswd.Dictionary, 'generated object is a Dictionary');
+        a.ok(defaultDict.allWords.length > 0, 'dictionary contains words');
+    });
+    
     QUnit.test('diacritic stripping function', function(a){
         a.expect(2);
         
@@ -101,6 +112,57 @@ QUnit.module('HSXKPasswd.Dictionary Class', function(){
                 ]
             },
             'expected words accepted and rejected'
+        );
+    });
+    
+    QUnit.test('get filtered words', function(a){
+        a.expect(4);
+        
+        // create a test dictionary with just a few words of different lengths
+        const testDict = new HSXKPasswd.Dictionary([
+            "poop",
+            "gives",
+            "cliché",
+            "boggers",
+            "Saturday",
+            "vica-versa"
+        ]);
+        a.ok(is.function(testDict.filteredWords), 'function exists');
+        
+        // test getting words with minimal settings
+        a.deepEqual(
+            testDict.filteredWords({ word_length_min: 5, word_length_max: 8 }),
+            [
+                "Saturday",
+                "boggers",
+                "cliche",
+                "gives"
+            ],
+            'returns expected words with minimal config'
+        );
+        
+        // test words with accents explicitly removed
+        a.deepEqual(
+            testDict.filteredWords({ word_length_min: 5, word_length_max: 8, allow_accents: false }),
+            [
+                "Saturday",
+                "boggers",
+                "cliche",
+                "gives"
+            ],
+            'returns expected words with accents explicitly removed'
+        );
+        
+        // test words with accents explicitly allowed
+        a.deepEqual(
+            testDict.filteredWords({ word_length_min: 6, word_length_max: 11, allow_accents: true }),
+            [
+                "Saturday",
+                "boggers",
+                "cliché",
+                "vica-versa"
+            ],
+            'returns expected words with accents explicitly allowed'
         );
     });
     
