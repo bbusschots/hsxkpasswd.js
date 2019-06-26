@@ -248,4 +248,39 @@ QUnit.module('HSXKPasswd.RandomNumberSource Class', function(){
             'alias returns expected value'
         );
     });
+    
+    QUnit.test('default constructor', function(a){
+        a.expect(2);
+        
+        // make sure the function exists
+        a.ok(is.function(HSXKPasswd.RandomNumberSource), 'class exists');
+        
+        // call the constructor with no arguments and make sure it doesn't throw an error
+        const defaultRNS = new HSXKPasswd.RandomNumberSource();
+        a.ok(true, 'did not throw error');
+    });
+    
+    QUnit.test('sync random number generation with default RNG', function(a){
+        a.expect(5);
+        
+        const defaultRNS = new HSXKPasswd.RandomNumberSource();
+        
+        // make sure the functions exist
+        a.ok(is.function(defaultRNS.randomNumberSync), '.randomNumberSync() exists');
+        a.ok(is.function(defaultRNS.randomNumbersSync), '.randomNumbersSync() exists');
+        
+        // try generate a single random number
+        const rn = defaultRNS.randomNumberSync();
+        a.ok(is.number(rn) && rn >= 0 && rn < 1, 'randomNumberSync() returns valid value');
+        
+        // try generate multipl random numbers
+        const numNums = 5;
+        const rns = defaultRNS.randomNumbersSync(numNums);
+        a.ok(is.array(rns) && rns.length === numNums && is.all.number(rns), 'randomNumbersSync() returns array of numbers of the expected length');
+        const allNumsValid = true;
+        for(const rn of rns){
+            if(rn < 0 || rn >= 1) allNumsValid = false;
+        }
+        a.ok(allNumsValid, 'all numbers returned by randomNumbersSync() are valid');
+    });
 });

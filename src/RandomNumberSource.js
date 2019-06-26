@@ -60,7 +60,7 @@ class RandomNumberSource{
         if(is.function(syncRNGCallback)){
             this._syncRNG = syncRNGCallback;
         }else{
-            this._syncRNG = defaultRNG;
+            this._syncRNG = this.constructor.defaultRNG;
         }
         if(is.function(asyncRNGCallback)){
             this.asyncRNG = asyncRNGCallback;

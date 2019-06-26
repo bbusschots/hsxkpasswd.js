@@ -34495,7 +34495,7 @@
 	        if(is.function(syncRNGCallback)){
 	            this._syncRNG = syncRNGCallback;
 	        }else{
-	            this._syncRNG = defaultRNG;
+	            this._syncRNG = this.constructor.defaultRNG;
 	        }
 	        if(is.function(asyncRNGCallback)){
 	            this.asyncRNG = asyncRNGCallback;
@@ -34505,28 +34505,39 @@
 	    }
 	    
 	    /**
-	     * Generate random numbers synchronously.
+	     * Synchronously generate random numbers.
 	     *
 	     * @param {number} [n=1] - the number of random numbers to generate.
-	     * @param {number} [min=0] - the lower limit for the number range.
-	     * @param {number} [max=1] - the upper limit for the number range.
 	     * @return {number[]} Returns and array of integers between min and max inclusive.
 	     * @throws {TypeError} A Type Error is thrown when invalid arguments are passed or the random number generator callback returns a value other than an array of numbers between zero and one.
 	     */
-	    randomNumbersSync(n=1, min=0, max=1){
+	    randomNumbersSync(n=1){
 	        // validate args
 	        if(is.not.integer(n) || n < 1) throw new TypeError('n must be an integer greater than or equal to one');
-	        if(is.not.integer(min)) throw new TypeError('min must be an integer');
-	        if(is.not.integer(max)) throw new TypeError('max must be an integer');
 	        
-	        // generate the random numbers and validate them
+	        // generate the random numbers
 	        const ans = this._syncRNG(n);
-	        if(is.not.array(ans)) throw new TypeError('synchronous random number generator callback did not return an array');
-	        if(!(is.all.number(ans) && is.all.within(ans, 0, 1))) throw new TypeError('synchronous random number generator returned and array that contained invalid values');
-	        if(ans.length !== n) throw new TypeError(`synchronous random number generator returned wrong number of numbers: needed ${n}, got ${ans.length}`);
 	        
-	        // return the random numbers
+	        // validate the generated numbers
+	        if(is.not.array(ans)) throw new TypeError('synchronous random number generator callback did not return an array');
+	        if(ans.length !== n) throw new TypeError(`synchronous random number generator returned wrong number of numbers: needed ${n}, got ${ans.length}`);
+	        if(!is.all.number(ans)) throw new TypeError('synchronous random number generator returned and array that contained a value other than a number');
+	        for(const rn of ans){
+	            if(rn < 0 || rn >= 1) throw new TypeError('synchronous random number generator returned and array that contained a number that is not greater than or equal to zero and less than one');
+	        }
+	        
+	        // return the numbers
 	        return ans;
+	    }
+	    
+	    /**
+	     * Synchronously generate a random number.
+	     *
+	     * @return {number[]} Returns and array of integers between min and max inclusive.
+	     * @throws {TypeError} A Type Error is thrown when the random number generator callback returns a value other than an array of numbers between zero and one.
+	     */
+	    randomNumberSync(){
+	        return this.randomNumbersSync(1)[0];
 	    }
 	    
 	    /**
