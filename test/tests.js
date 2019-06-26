@@ -214,3 +214,38 @@ QUnit.module('HSXKPasswd.Dictionary Class', function(){
         );
     });
 });
+
+QUnit.module('HSXKPasswd.RandomNumberSource Class', function(){
+    QUnit.test('random number to random index conversion', function(a){
+        a.expect(6);
+        
+        // make sure the function and its alias exist
+        a.ok(is.function(HSXKPasswd.RandomNumberSource.randomIndexFromRandomNumber), 'randomIndexFromRandomNumber function exists');
+        a.ok(is.function(HSXKPasswd.RandomNumberSource.randIndex), 'randIndex alias exists');
+        
+        // test the conversion
+        a.equal(
+            HSXKPasswd.RandomNumberSource.randomIndexFromRandomNumber(0.00001, 5),
+            0,
+            'lower bound returns 0'
+        );
+        a.equal(
+            HSXKPasswd.RandomNumberSource.randomIndexFromRandomNumber(0.99999, 5),
+            4,
+            'upper bound returns one less than the length'
+        );
+        a.equal(
+            HSXKPasswd.RandomNumberSource.randomIndexFromRandomNumber(0.5, 5),
+            2,
+            'intermediate value returns expected result'
+        );
+        
+        
+        // test the alias
+        a.equal(
+            HSXKPasswd.RandomNumberSource.randIndex(0.5, 5),
+            2,
+            'alias returns expected value'
+        );
+    });
+});
