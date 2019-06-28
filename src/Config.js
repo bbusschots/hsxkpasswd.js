@@ -28,6 +28,23 @@ const DEFAULT_SETTINGS = {
  */
 class Config{
     /**
+     * Test if a given value is a valid alphabet. I.e. if a given value is an array consisting of one or more single-character strings.
+     *
+     * @param {*} val - The value to test
+     * @return {boolean}
+     */
+    static isAlphabet(val){
+        if(is.not.array(val)) return false;
+        if(val.length < 1) return false;
+        if(!is.all.string(val)) return false;
+        const allValid = true;
+        for(const i of val){
+            if(i.length !== 1) allValid = false;
+        }
+        return allValid;
+    }
+    
+    /**
      * @param {Object} [settings] - The config settings. If no object is passed the default settings are used.
      * @throws {TypeError} - A type error is thrown if invalid args are passed.
      * @todo Validate settings

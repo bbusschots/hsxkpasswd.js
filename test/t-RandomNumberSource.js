@@ -167,6 +167,27 @@ QUnit.module('HSXKPasswd.RandomNumberSource Class', function(){
         a.ok(allIndexesValid, 'all indexes returned by randomIndexesSync() are valid');
     });
     
+    // randomItemSync
+    QUnit.test('sync random item selection with default RNG', function(a){
+        a.expect(3);
+        
+        const defaultRNS = new HSXKPasswd.RandomNumberSource();
+        
+        // make sure the function exist
+        a.ok(is.function(defaultRNS.randomItemSync), 'function exists');
+        
+        // try select an item from a single-element array
+        a.strictEqual(
+            defaultRNS.randomItemSync(['a']),
+            'a',
+            'returns the single item in a single-item array'
+        );
+        
+        // try select a random element from an array with multiple values
+        const ri = defaultRNS.randomItemSync(['a', 'b', 'c']);
+        a.ok(String(ri).match(/^a|b|c$/), 'returns expected value');
+    });
+    
     QUnit.test('sync random number generation with default RNG', function(a){
         a.expect(5);
         

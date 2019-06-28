@@ -193,6 +193,25 @@ class RandomNumberSource{
     }
     
     /**
+     * Synchronously pick a random item from an array.
+     *
+     * @param {Array} array - The array to randomly pick an item from. This array must contain at least one element.
+     * @return {*} A randomly picked item from the array.
+     * @throws {TypeError} A Type Error is thrown when the random number generator callback returns an invalid value.
+     * @throws {Error} An Error is thrown if synchronous random number generation fails.
+     */
+    randomItemSync(array){
+        // validate args
+        if(is.not.array(array) || array.length < 1) throw new TypeError('must pass an array containing at least one item');
+        
+        // if there's only one item, return it
+        if(array.length === 1) return array[0];
+        
+        // otherwise return a random item
+        return array[this.randomIndexSync(array.length)];
+    }
+    
+    /**
      * Synchronously generate random numbers.
      *
      * @param {number} [n=1] - the number of random numbers to generate.

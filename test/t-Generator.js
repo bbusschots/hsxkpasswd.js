@@ -1,5 +1,5 @@
 QUnit.module('HSXKPasswd.Generator Class', function(){
-    QUnit.test('apply case transformations synchronously', function(a){
+    QUnit.test('add padding digits synchronously', function(a){
         a.expect(9);
         
         // make sure the function exists
@@ -123,6 +123,22 @@ QUnit.module('HSXKPasswd.Generator Class', function(){
             TypeError,
             'invalid case_transform throws Type Error'
         );
+    });
+    
+    QUnit.test('generate separator character synchronously', function(a){
+        a.expect(4);
+        
+        // make sure the function exists
+        a.ok(is.function(HSXKPasswd.Generator.generateSeparatorSync), 'function exists');
+        
+        // a basic random number source
+        const testRNS = new HSXKPasswd.RandomNumberSource();
+        
+        // make sure the function returns the expected value for each separator type
+        a.strictEqual(HSXKPasswd.Generator.generateSeparatorSync({ separator_character: 'NONE' }, testRNS), '', 'separator_character=NONE returns empty string');
+        a.strictEqual(HSXKPasswd.Generator.generateSeparatorSync({ separator_character: '-' }, testRNS), '-', 'specified separator_character returns expected value');
+        const sep = HSXKPasswd.Generator.generateSeparatorSync({ separator_character: 'RANDOM', symbol_alphabet: ['-', '+'] }, testRNS);
+        a.ok(is.string(sep) && sep.length === 1, 'separator_character=RANDOM returns expected value');
     });
     
     QUnit.test('default constructor', function(a){

@@ -1,4 +1,27 @@
 QUnit.module('HSXKPasswd.Config Class', function(){
+    QUnit.test('alphabet validator', function(a){
+        a.expect(3);
+        
+        // make sure the function exists
+        a.ok(is.function(HSXKPasswd.Config.isAlphabet), 'function exists');
+        
+        // a valid value returns true
+        a.strictEqual(
+            HSXKPasswd.Config.isAlphabet(['+']),
+            true,
+            'valid value returns true'
+        );
+        
+        // an invalid value returns false
+        a.strictEqual(
+            HSXKPasswd.Config.isAlphabet('boogers'),
+            false,
+            'an invalid value returns false'
+        );
+        
+        // TO DO - MANY more tests!
+    });
+    
     QUnit.test('default constructor', function(a){
         a.expect(3);
         
