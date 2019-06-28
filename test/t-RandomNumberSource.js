@@ -47,8 +47,8 @@ QUnit.module('HSXKPasswd.RandomNumberSource Class', function(){
         );
     });
     
-    QUnit.test('default constructor', function(a){
-        a.expect(2);
+    QUnit.test('constructor — default', function(a){
+        a.expect(4);
         
         // make sure the function exists
         a.ok(is.function(HSXKPasswd.RandomNumberSource), 'class exists');
@@ -56,6 +56,48 @@ QUnit.module('HSXKPasswd.RandomNumberSource Class', function(){
         // call the constructor with no arguments and make sure it doesn't throw an error
         const defaultRNS = new HSXKPasswd.RandomNumberSource();
         a.ok(true, 'did not throw error');
+        
+        // make sure the object recognises itself as supporting synchronous random number generation
+        a.strictEqual(defaultRNS.isSynchronous, true, '.isSynchronous has expected value');
+        a.strictEqual(defaultRNS.sync, true, '.sync has expected value');
+    });
+    
+    QUnit.test('constructor — async-only default RNG', function(a){
+        a.expect(3);
+        
+        // call the constructor with no arguments and make sure it doesn't throw an error
+        const asyncRNS = new HSXKPasswd.RandomNumberSource(null);
+        a.ok(true, 'did not throw error');
+        
+        // recognises itself as not supporting sync
+        a.strictEqual(asyncRNS.isSynchronous, false, '.isSynchronous has expected value');
+        a.strictEqual(asyncRNS.sync, false, '.sync has expected value');
+    });
+    
+     QUnit.test('error handling for sync requests to async-only Random Number Source', function(a){
+        const syncSingleGenerators = ['randomBooleanSync', 'randomDigitSync', 'randomIndexSync', 'randomNumberSync'];
+        const syncMultiGenerators = ['randomBooleansSync', 'randomDigitsSync', 'randomIndexesSync', 'randomNumbersSync'];
+        a.expect(syncSingleGenerators.length + syncMultiGenerators.length);
+        
+        const asyncOnlyRNS = new HSXKPasswd.RandomNumberSource(null);
+        
+        // make sure all the single-value sync generators thorw an Error
+        for(const sGenFn of syncSingleGenerators){
+            a.throws(
+                ()=>{ asyncOnlyRNS[sGenFn](); },
+                Error,
+                `.${sGenFn}() throws Error`
+            );
+        }
+        
+        // make sure all the multi-value sync generators thorw an Error
+        for(const mGenFn of syncMultiGenerators){
+            a.throws(
+                ()=>{ asyncOnlyRNS[mGenFn](); },
+                Error,
+                `.${mGenFn}() throws Error`
+            );
+        }
     });
     
     QUnit.test('sync random boolean generation with default RNG', function(a){
