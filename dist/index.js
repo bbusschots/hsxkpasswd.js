@@ -34621,55 +34621,43 @@
 	 */
 	class Generator{
 	    /**
-	     * Synchronously Generate a password.
+	     * Synchronously add the appropriate number of padding digits to the start and end of an array of words. Changes are applied in-place. The array is returned purely for convenience. 
 	     *
-	     * @param {Config} config
-	     * @param {Dictionary} dict
-	     * @param {RandomNumberSource} rns
-	     * @param {number} [n=1]
+	     * @param {String[]} words - The array contianing the words. Items will be added into this array in-place.
+	     * @param {(Object|Config)} config - A config object to control the number of digits inserted (if any). Can be an instance of Config, or any object that defines the keys `padding_digits_before` & `padding_digits_after` with valid values.
+	     * @param {RandomNumberSource} rns - A RandomNumberSource object with a syncronous random number generator.
+	     * @return {String[]} The same array passed as the first argument.
+	     * @throws {TypeError} A Type Error is thrown on invalid args.
 	     */
-	    static generatePasswordsSync(config, dict, rns, n=1){
-	        // validate args
-	        if(!(config instanceof Config)){
-	            throw new TypeError('config must be a Config object');
+	    static addPaddingDigitsSync(words, config, rns){
+	        if(!(is.array(words) && is.all.string(words))){
+	            throw new TypeError('words must be an array of strings');
 	        }
-	        if(!(dict instanceof Dictionary)){
-	            throw new TypeError('config must be a Dictionary object');
+	        if(!(config instanceof Config || is.object(config))){
+	            throw new TypeError('config must be an HSXKPasswd Config object or a plain object with valid value for the keys padding_digits_before & padding_digits_after');
 	        }
-	        if(!(rns instanceof RandomNumberSoure)){
-	            throw new TypeError('config must be a RandomNumberSource object');
+	        if(!(is.integer(config.padding_digits_before) && is.not.negative(config.padding_digits_before))){
+	            throw new TypeError('config.padding_digits_before must be an integer greater than or equal to zero.');
 	        }
-	        if(is.not.integer(n) || is.not.positive(n)){
-	            throw new TypeError('n must be a positibe integer');
+	        if(!(is.integer(config.padding_digits_after) && is.not.negative(config.padding_digits_after))){
+	            throw new TypeError('config.padding_digits_after must be an integer greater than or equal to zero.');
+	        }
+	        if(!(rns instanceof RandomNumberSource && rns.sync)){
+	            throw new TypeError('rns must be a RandomNumberSource object supporting synchronous random number generation');
 	        }
 	        
-	        // get the word list for the given config
-	        const words = dict.filteredWords(config);
+	        // insert the required prefixed digits
+	        if(config.padding_digits_before > 0){
+	            words.unshift(rns.randomDigitsSync(config.padding_digits_before).join(''));
+	        }
 	        
-	        // build the passwords
-	        const ans = [];
-	        do{
-	            // start with a list of random words
-	            const parts = [];
-	            for(const randNum of rns.randomNumbersSync(config.num_words)){
-	                parts.push(words[RandomNumberSource.randIndex(randNum, words.length)]);
-	            }
-	            
-	            // apply any needed case transforms
-	            this.applyCaseTransformationsSync(parts, config);
+	        // insert the required postfixed digits
+	        if(config.padding_digits_after > 0){
+	            words.push(rns.randomDigitsSync(config.padding_digits_after).join(''));
+	        }
 	        
-	            // pre-fix any needed digits
-	            // TO DO - LEFT OFF HERE!!!
-	        
-	            // join the parts into a single string with the appropriate separator
-	            // TO DO
-	        
-	            // add the requested padding, if any
-	            // TO DO
-	        }while(ans.length < n);
-	        
-	        // return the generated passwords
-	        return ans;
+	        // return a reference to the passed array
+	        return words;
 	    }
 	    
 	    /**
@@ -34685,8 +34673,8 @@
 	        if(!(is.array(words) && is.all.string(words))){
 	            throw new TypeError('words must be an array of strings');
 	        }
-	        if(!(config instanceof Config || (is.object(config) && is.string(config.case_transform)))){
-	            throw new TypeError('config must be an HSXKPasswd Config object');
+	        if(!((config instanceof Config || (is.object(config)) && is.string(config.case_transform)))){
+	            throw new TypeError('config must be an HSXKPasswd Config object or a plain object with a valid value for the key case_transform');
 	        }
 	        if(!(rns instanceof RandomNumberSource && rns.sync)){
 	            throw new TypeError('rns must be a RandomNumberSource object supporting synchronous random number generation');
@@ -34748,6 +34736,58 @@
 	        
 	        // return a reference to the passed array
 	        return words;
+	    }
+	    
+	    /**
+	     * Synchronously Generate a password.
+	     *
+	     * @param {Config} config
+	     * @param {Dictionary} dict
+	     * @param {RandomNumberSource} rns
+	     * @param {number} [n=1]
+	     */
+	    static generatePasswordsSync(config, dict, rns, n=1){
+	        // validate args
+	        if(!(config instanceof Config)){
+	            throw new TypeError('config must be a Config object');
+	        }
+	        if(!(dict instanceof Dictionary)){
+	            throw new TypeError('config must be a Dictionary object');
+	        }
+	        if(!(rns instanceof RandomNumberSoure)){
+	            throw new TypeError('config must be a RandomNumberSource object');
+	        }
+	        if(is.not.integer(n) || is.not.positive(n)){
+	            throw new TypeError('n must be a positibe integer');
+	        }
+	        
+	        // get the word list for the given config
+	        const words = dict.filteredWords(config);
+	        
+	        // build the passwords
+	        const ans = [];
+	        do{
+	            // start with a list of random words
+	            const parts = [];
+	            for(const randNum of rns.randomNumbersSync(config.num_words)){
+	                parts.push(words[RandomNumberSource.randIndex(randNum, words.length)]);
+	            }
+	            
+	            // apply any needed case transforms
+	            this.applyCaseTransformationsSync(parts, config);
+	        
+	            // pre-fix any needed digits
+	            // TO DO - LEFT OFF HERE!!!
+	        
+	            // join the parts into a single string with the appropriate separator
+	            // TO DO
+	        
+	            // add the requested padding, if any
+	            // TO DO
+	        }while(ans.length < n);
+	        
+	        // return the generated passwords
+	        return ans;
 	    }
 	    
 	    /**
