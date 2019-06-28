@@ -12,7 +12,7 @@
   },
   "scripts": {
     "build": "./node_modules/rollup/bin/rollup -c",
-    "test": "./node_modules/.bin/qunit -c HSXKPasswd:./dist/index.js -d is:./node_modules/is_js _:./node_modules/lodash -t ./test/tests.js"
+    "test": "./node_modules/.bin/qunit -c HSXKPasswd:./dist/index.js -d is:./node_modules/is_js _:./node_modules/lodash -t ./test/t-*.js"
   },
   "repository": {
     "type": "git",
