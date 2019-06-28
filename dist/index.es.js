@@ -34480,14 +34480,15 @@ class RandomNumberSource{
      * Synchronously generate random booleans.
      * @param {number} [n=1] - the number of random booleans to generate.
      * @return {boolean[]}
-     * @throws {TypeError} A Type Error is thrown when invalid arguments are passed or random number generation fails.
+     * @throws {TypeError} A Type Error is thrown when the random number generator callback returns an invalid value.
+     * @throws {Error} An Error is thrown if synchronous random number generation fails.
      */
     randomBooleansSync(n=1){
         // validate args
         if(is.not.integer(n) || n < 1) throw new TypeError('n must be an integer greater than or equal to one');
         
         // generate random numbers, convert them to Booleans, and return
-        const rns = this._syncRNG(n);
+        const rns = this.randomNumbersSync(n);
         return rns.map((rn)=>{ return this.constructor.randomBooleanFromRandomNumber(rn); });
     }
     
@@ -34496,9 +34497,36 @@ class RandomNumberSource{
      *
      * @return {boolean}
      * @throws {TypeError} A Type Error is thrown when the random number generator callback returns an invalid value.
+     * @throws {Error} An Error is thrown if synchronous random number generation fails.
      */
     randomBooleanSync(){
         return this.randomBooleansSync(1)[0];
+    }
+    
+    /**
+     * Synchronously generate random digits.
+     * @param {number} [n=1] - the number of random digits to generate.
+     * @return {number[]}
+     * @throws {TypeError} A Type Error is thrown when the random number generator callback returns an invalid value.
+     * @throws {Error} An Error is thrown if synchronous random number generation fails.
+     */
+    randomDigitsSync(n=1){
+        // validate args
+        if(is.not.integer(n) || n < 1) throw new TypeError('n must be an integer greater than or equal to one');
+        
+        // return random indexes of length 10
+        return this.randomIndexesSync(n, 10);
+    }
+    
+    /**
+     * Synchronously generate a random digit.
+     *
+     * @return {number}
+     * @throws {TypeError} A Type Error is thrown when the random number generator callback returns an invalid value.
+     * @throws {Error} An Error is thrown if synchronous random number generation fails.
+     */
+    randomDigitSync(){
+        return this.randomDigitsSync(1)[0];
     }
     
     /**
@@ -34506,7 +34534,8 @@ class RandomNumberSource{
      * @param {number} [n=1] - the number of random booleans to generate.
      * @param {number} [length=2] - the length of the item for which to generate random indexes.
      * @return {number[]} Returns and array of numbers greater than or equal to zero and less than the length.
-     * @throws {TypeError} A Type Error is thrown when invalid arguments are passed or random number generation fails.
+     * @throws {TypeError} A Type Error is thrown when the random number generator callback returns an invalid value.
+     * @throws {Error} An Error is thrown if synchronous random number generation fails.
      */
     randomIndexesSync(n=1, length=2){
         // validate args
@@ -34514,7 +34543,7 @@ class RandomNumberSource{
         if(is.not.integer(length) || length < 2) throw new TypeError('length must be an integer greater than or equal to two');
         
         // generate random numbers, convert them to indexes, and return
-        const rns = this._syncRNG(n);
+        const rns = this.randomNumbersSync(n);
         return rns.map((rn)=>{ return this.constructor.randomIndexFromRandomNumber(rn, length); });
     }
     
@@ -34523,7 +34552,8 @@ class RandomNumberSource{
      *
      * @param {number} [length=2] - the length of the item for which to generate random indexes.
      * @return {boolean}
-     * @throws {TypeError} A Type Error is thrown when invalid args are assed or the random number generator callback returns an invalid value.
+     * @throws {TypeError} A Type Error is thrown when the random number generator callback returns an invalid value.
+     * @throws {Error} An Error is thrown if synchronous random number generation fails.
      */
     randomIndexSync(length){
         return this.randomIndexesSync(1, length)[0];
@@ -34535,8 +34565,12 @@ class RandomNumberSource{
      * @param {number} [n=1] - the number of random numbers to generate.
      * @return {number[]} Returns and array of numbers greater than or equal to zero and less than one.
      * @throws {TypeError} A Type Error is thrown when invalid arguments are passed or the random number generator callback returns invaid data.
+     * @throws {Error} An Error is thrown if the random number source does not support synchronous random number generation.
      */
     randomNumbersSync(n=1){
+        // make sure can synchronously generate random numbers
+        if(!this.sync) throw new Error('synchronous random number geneation not supported on this Random Number Source'); 
+        
         // validate args
         if(is.not.integer(n) || n < 1) throw new TypeError('n must be an integer greater than or equal to one');
         
@@ -34559,7 +34593,8 @@ class RandomNumberSource{
      * Synchronously generate a random number.
      *
      * @return {number} Returns a number gerater than or equal to zero and less than one.
-     * @throws {TypeError} A Type Error is thrown when the random number generator callback returns a value other than an array of numbers greater than or equal to zero and less than one.
+     * @throws {TypeError} A Type Error is thrown when the random number generator callback returns invaid data.
+     * @throws {Error} An Error is thrown if the random number source does not support synchronous random number generation.
      */
     randomNumberSync(){
         return this.randomNumbersSync(1)[0];

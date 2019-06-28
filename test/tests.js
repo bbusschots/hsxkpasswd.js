@@ -375,6 +375,31 @@ QUnit.module('HSXKPasswd.RandomNumberSource Class', function(){
         a.ok(is.array(rbs) && rbs.length === numBools && is.all.boolean(rbs), 'randomBooleansSync() returns array of booleans of the expected length');
     });
     
+    QUnit.test('sync random digit generation with default RNG', function(a){
+        a.expect(5);
+        
+        const defaultRNS = new HSXKPasswd.RandomNumberSource();
+        
+        // make sure the functions exist
+        a.ok(is.function(defaultRNS.randomDigitSync), '.randomDigitSync() exists');
+        a.ok(is.function(defaultRNS.randomDigitsSync), '.randomDigitsSync() exists');
+        
+        // try generate a single random digit
+        const rd = defaultRNS.randomDigitSync();
+        a.ok(is.number(rd) && String(rd).match(/^\d$/), '.randomDigitSync() returns valid value');
+        
+        // try generate multiple random digits
+        const numDigits = 5;
+        const rds = defaultRNS.randomDigitsSync(numDigits);
+        console.log(rds);
+        a.ok(is.array(rds) && rds.length === numDigits && is.all.number(rds), 'randomDigitsSync() returns array of numbers of the expected length');
+        const allDigitsValid = true;
+        for(const rd of rds){
+            if(rd < 0 || rd > 9) allDigitsValid = false;
+        }
+        a.ok(allDigitsValid, 'all numbers returned by randomDigitsSync() are single-digit numbers');
+    });
+    
     QUnit.test('sync random index generation with default RNG', function(a){
         a.expect(5);
         
