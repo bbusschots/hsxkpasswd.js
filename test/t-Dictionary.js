@@ -81,7 +81,7 @@ QUnit.module('HSXKPasswd.Dictionary Class', function(){
     });
     
     QUnit.test('get filtered words', function(a){
-        a.expect(4);
+        a.expect(5);
         
         // create a test dictionary with just a few words of different lengths
         const testDict = new HSXKPasswd.Dictionary([
@@ -126,6 +126,18 @@ QUnit.module('HSXKPasswd.Dictionary Class', function(){
                 "boggers",
                 "cliché",
                 "vica-versa"
+            ],
+            'returns expected words with accents explicitly allowed'
+        );
+        
+        // test character substitutions
+        a.deepEqual(
+            testDict.filteredWords({ word_length_min: 6, word_length_max: 11, character_substitutions: { i: '1', s: '$' } }),
+            [
+                "Saturday",
+                "bogger$",
+                "cl1che",
+                "v1ca-ver$a"
             ],
             'returns expected words with accents explicitly allowed'
         );

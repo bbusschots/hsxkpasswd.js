@@ -150,6 +150,7 @@ class Generator{
         }
         
         // get the word list for the given config
+        // returned words have accents removed if needed and any defined character replacements applied
         const words = dict.filteredWords(config);
         
         // build the passwords

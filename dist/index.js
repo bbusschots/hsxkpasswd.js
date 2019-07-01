@@ -34231,6 +34231,7 @@
 	     * @param {number} constraints.word_length_min - the minimum length of words to include.
 	     * @param {number} constraints.word_length_max - the maximum length of words to include.
 	     * @param {boolean} [constraints.allow_accents=false] - whether or not accents should be stripped from accented characters. Defaults to false.
+	     * @param {object} [constraints.character_substitutions={}] - any character substitutions to apply before returning the words. Defaults to none.
 	     * @return {String[]}
 	     * @throws {TypeError} A Type Error is thrown on invalid args.
 	     * @throws {Error} An Error is thrown if the Dictionary is not ready
@@ -34250,15 +34251,30 @@
 	        if(constraints.word_length_min > constraints.word_length_max){
 	            throw new TypeError('constraints.word_length_min must be less than or equal to constraints.word_length_max');
 	        }
+	        if(is.not.undefined(constraints.character_substitutions)){
+	            const subsErrMsg = 'if present, constraints.character_substitutions must be an object mapping single characters to strings';
+	            if(is.not.object(constraints.character_substitutions)) throw new TypeError(subsErrMsg);
+	            for(const c of Object.keys(constraints.character_substitutions)){
+	                if(!XRegExp.match(c, XRegExp('^\\p{Letter}$'))) throw new TypeError(subsErrMsg);
+	                if(is.not.string(constraints.character_substitutions[c])) throw new TypeError(subsErrMsg);
+	            }
+	        }
 	        const validatedConstraints = {
 	            word_length_min: constraints.word_length_min,
 	            word_length_max: constraints.word_length_max,
-	            allow_accents: is.undefined(constraints.allow_accents) ? false : constraints.allow_accents ? true : false
+	            allow_accents: is.undefined(constraints.allow_accents) ? false : constraints.allow_accents ? true : false,
+	            character_substitutions: constraints.character_substitutions ? constraints.character_substitutions : {}
 	        };
 	        
-	        // loop through all words and test against criteria
+	        // loop through all words, apply any specified substitutions, then test against criteria
 	        const fiteredWords = [];
-	        for(const word of this._words){
+	        for(let word of this._words){
+	            // apply substitutions
+	            for(const c of Object.keys(validatedConstraints.character_substitutions)){
+	                word = word.replace(c, validatedConstraints.character_substitutions[c]);
+	            }
+	            
+	            // test against constraints
 	            if(word.length < validatedConstraints.word_length_min) continue;
 	            if(word.length > validatedConstraints.word_length_max) continue;
 	            if(validatedConstraints.allow_accents){
@@ -34798,6 +34814,7 @@
 	        }
 	        
 	        // get the word list for the given config
+	        // returned words have accents removed if needed and any defined character replacements applied
 	        const words = dict.filteredWords(config);
 	        
 	        // build the passwords
