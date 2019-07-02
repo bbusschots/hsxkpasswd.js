@@ -18831,20 +18831,234 @@
 	 */
 	class Config{
 	    /**
+	     * Assert that a given value is a valid alphabet. I.e. if a given value is an array consisting of one or more single-character strings.
+	     *
+	     * A Type Error is thrown if the value is not valid.
+	     *
+	     * @param {*} val - The value to test
+	     * @return {boolean} Always returns `true`.
+	     * @throws {TypeError} A Type Error is thrown if the value is not a valid alphabet.
+	     */
+	    static assertAlphabet(val){
+	        if(is.not.array(val)) throw new TypeError('alphabet must be an array');
+	        if(val.length < 1) throw new TypeError('alphabet must contain at least one character');
+	        if(!is.all.string(val)) throw new TypeError('alphabet contains a value that is not a string');
+	        for(const i of val){
+	            if(i.length !== 1) throw new TypeError('alphabet contains a string that is not exactly one character long');
+	        }
+	        return true;
+	    }
+	    
+	    /**
+	     * Assert that a given object defines a valid case transformation configuration. Invalid values will result in a Type Error.
+	     *
+	     * The object must provide the key `case_transform` with one of the following valid values; `ALTERNATE`, `CAPITALISE`, `INVERT`, `LOWER`, `NONE`, `RANDOM`, or `UPPER`.
+	     *
+	     * @param {*} conf - The value to test.
+	     * @return {boolean} - Always returns `true`.
+	     * @throws {TypeError} A TypeError is thrown if the passed object does not define a valid case transformation configuration.
+	     */
+	    static assertCaseTransformation(conf){
+	        if(is.not.object(conf)) throw new TypeError('config must be an object');
+	        if(is.not.string(conf.case_transform)){
+	            throw new TypeError('case_transform must be a string');
+	        }
+	        if(!conf.case_transform.match(/^(ALTERNATE)|(CAPITALISE)|(INVERT)|(LOWER)|(NONE)|(RANDOM)|(UPPER)$/)){
+	            throw new TypeError('invalid case_transform');
+	        }
+	        return true;
+	    }
+	    
+	    /**
+	     * Assert that a given object defines a valid padding character configuration. Invalid values will result in a Type Error.
+	     *
+	     * The object must provide the key `padding_type`. The minimum valid configuation is `{ padding_type: 'NONE' }`.
+	     *
+	     * For all padding types other than `NONE` `padding_character` is also required.
+	     *
+	     * For `padding_type='FIXED'` both `padding_characters_before` & `padding_characters_after` are required.
+	     *
+	     * For `padding_type='ADAPTIVE'` `pad_to_length` is required.
+	     *
+	     * For `padding_character='RANDOM'` one of `padding_alphabet` or `symbol_alphabet` is required.
+	     *
+	     * @param {*} conf - The value to test.
+	     * @return {boolean} - Always returns `true`.
+	     * @throws {TypeError} A TypeError is thrown if the passed object does not define a valid padding configuration.
+	     */
+	    static assertPaddingCharacters(conf){
+	        // make sure we have an object that defines a padding type
+	        if(is.not.object(conf)) throw new TypeError('config must be an object');
+	        if(is.not.string(conf.padding_type)){
+	            throw new TypeError('padding_type must be a string');
+	        }
+	        
+	        // short-circuit no padding
+	        if(conf.padding_type === 'NONE') return true;
+	        
+	        // make sure we have the keys needed to determine the padding character to use
+	        if(is.not.string(conf.padding_character)) throw new TypeError('padding_character must be a string');
+	        if(conf.padding_character === 'RANDOM'){
+	            if(!(this.isAlphabet(conf.padding_alphabet) || this.isAlphabet(conf.symbol_alphabet))){
+	                throw new TypeError('padding_character is RANDOM but neither padding_alphabet nor symbol_alphabet are defined');
+	            }
+	        }else if(conf.padding_character === 'SEPARATOR');else{
+	            if(conf.padding_character.length !== 1) throw new TypeError('invalid padding_character');
+	        }
+	        
+	        // make sure we have the keys needed to determine what the amount of padding to apply
+	        if(conf.padding_type === 'FIXED'){
+	            if(is.not.integer(conf.padding_characters_before) || is.negative(conf.padding_characters_before)){
+	                throw new TypeError('padding_characters_before must be an integer greater than or equal to zero');
+	            }
+	            if(is.not.integer(conf.padding_characters_after) || is.negative(conf.padding_characters_after)){
+	                throw new TypeError('padding_characters_after must be an integer greater than or equal to zero');
+	            }
+	        }else if(conf.padding_type === 'ADAPTIVE'){
+	            if(is.not.integer(conf.pad_to_length) || is.under(conf.pad_to_length, 12)){
+	                throw new TypeError('invalid pad_to_length, must be an integer greater than or equal to 12');
+	            }
+	        }else{
+	            throw new TypeError("invalid padding_type, must be one of 'NONE', 'FIXED', or 'ADAPTIVE'");
+	        }
+	        
+	        // if we got here all is well
+	        return true;
+	    }
+	    
+	    /**
+	     * Assert that a given object defines a valid padding digit configuration. Invalid values will result in a Type Error.
+	     *
+	     * The object must provide the keys `padding_digits_before` & `padding_digits_after`.
+	     *
+	     * @param {*} conf - The value to test.
+	     * @return {boolean} - Always returns `true`.
+	     * @throws {TypeError} A TypeError is thrown if the passed object does not define a valid padding configuration.
+	     */
+	    static assertPaddingDigits(conf){
+	        // make sure we have an object
+	        if(is.not.object(conf)) throw new TypeError('config must be an object');
+	        
+	        // make sure we have valid values for both required keys
+	        if(is.not.integer(conf.padding_digits_before) || is.negative(conf.padding_digits_before)){
+	            throw new TypeError('padding_digits_before must be an integer greater than or equal to zero');
+	        }
+	        if(is.not.integer(conf.padding_digits_after) || is.negative(conf.padding_digits_after)){
+	            throw new TypeError('padding_digits_after must be an integer greater than or equal to zero');
+	        }
+	        
+	        // if we got here all is well
+	        return true;
+	    }
+	    
+	    /**
+	     * Assert that a given object defines a valid padding configuration. Invalid values will result in a Type Error.
+	     *
+	     * The object must provide the key `separator_character`.
+	     *
+	     * For `separator_character='RANDOM'` one of `separator_alphabet` or `symbol_alphabet` is required.
+	     *
+	     * @param {*} conf - The value to test.
+	     * @return {boolean} - Always returns `true`.
+	     * @throws {TypeError} A TypeError is thrown if the passed object does not define a valid padding configuration.
+	     */
+	    static assertSeparator(conf){
+	        // make sure we have an object that defines a padding type
+	        if(is.not.object(conf)) throw new TypeError('config must be an object');
+	        if(is.not.string(conf.separator_character)){
+	            throw new TypeError('separator_character must be a string');
+	        }
+	        
+	        // deal with each possible separator character
+	        if(conf.separator_character === 'NONE'){
+	            return true;
+	        }else if(conf.separator_character === 'RANDOM'){
+	            if(this.isAlphabet(conf.separator_alphabet) || this.isAlphabet(conf.symbol_alphabet)){
+	                return true;
+	            }else{
+	                throw new TypeError('separator_character is RANDOM, but neither separator_alphabet nor symbol_alphabet are defined');
+	            }
+	        }else if(conf.separator_character.length === 1){
+	            return true;
+	        }
+	        
+	        // if we got here the separator character is not valid!
+	        throw new TypeError("invalid separator_character, must be a single character or one of 'NONE' or 'RANDOM'");
+	    }
+	    
+	    /**
+	     * Test if a given value is an object that defines the config keys needed to specify case transformations.
+	     *
+	     * @param {*} val - The value to test.
+	     * @return {boolean}
+	     */
+	    static definesCaseTransformation(val){
+	        try{
+	            this.assertCaseTransformation(val);
+	        }catch(err){
+	            return false;
+	        }
+	        return true;
+	    }
+	    
+	    /**
+	     * Test if a given value is an object that defines the config keys needed to specify password character padding.
+	     *
+	     * @param {*} val - The value to test.
+	     * @return {boolean}
+	     */
+	    static definesPaddingCharacters(val){
+	        try{
+	            this.assertPaddingCharacters(val);
+	        }catch(err){
+	            return false;
+	        }
+	        return true;
+	    }
+	    
+	    /**
+	     * Test if a given value is an object that defines the config keys needed to specify password digit padding.
+	     *
+	     * @param {*} val - The value to test.
+	     * @return {boolean}
+	     */
+	    static definesPaddingDigits(val){
+	        try{
+	            this.assertPaddingDigits(val);
+	        }catch(err){
+	            return false;
+	        }
+	        return true;
+	    }
+	    
+	    /**
+	     * Test if a given value is an object that defines the config keys needed to specify a separatpor.
+	     *
+	     * @param {*} val - The value to test.
+	     * @return {boolean}
+	     */
+	    static definesSeparator(val){
+	        try{
+	            this.assertSeparator(val);
+	        }catch(err){
+	            return false;
+	        }
+	        return true;
+	    }
+	    
+	    /**
 	     * Test if a given value is a valid alphabet. I.e. if a given value is an array consisting of one or more single-character strings.
 	     *
 	     * @param {*} val - The value to test
 	     * @return {boolean}
 	     */
 	    static isAlphabet(val){
-	        if(is.not.array(val)) return false;
-	        if(val.length < 1) return false;
-	        if(!is.all.string(val)) return false;
-	        const allValid = true;
-	        for(const i of val){
-	            if(i.length !== 1) allValid = false;
+	        try{
+	            this.assertAlphabet(val);
+	        }catch(err){
+	            return false;
 	        }
-	        return allValid;
+	        return true;
 	    }
 	    
 	    /**
@@ -34242,10 +34456,10 @@
 	        
 	        // validate constraints
 	        if(is.not.object(constraints)) throw new TypeError('constraints are required and must be passed as an object');
-	        if(!(is.integer(constraints.word_length_min) && is.above(constraints.word_length_min, Dictionary.MIN_WORD_LENGTH))){
+	        if(!(is.integer(constraints.word_length_min) && constraints.word_length_min >= Dictionary.MIN_WORD_LENGTH)){
 	            throw new TypeError(`constraints.word_length_min must be an integer greater than or equal to ${Dictionary.MIN_WORD_LENGTH} and less than or equal to word_length_max`);
 	        }
-	        if(!(is.integer(constraints.word_length_max) && is.above(constraints.word_length_max, Dictionary.MIN_WORD_LENGTH))){
+	        if(!(is.integer(constraints.word_length_max) && constraints.word_length_max >= Dictionary.MIN_WORD_LENGTH)){
 	            throw new TypeError(`constraints.word_length_max must be an integer greater than or equal to ${Dictionary.MIN_WORD_LENGTH} and greater than or equal to word_length_min`);
 	        }
 	        if(constraints.word_length_min > constraints.word_length_max){
@@ -34685,14 +34899,8 @@
 	        if(!(is.array(words) && is.all.string(words))){
 	            throw new TypeError('words must be an array of strings');
 	        }
-	        if(!(config instanceof Config || is.object(config))){
-	            throw new TypeError('config must be an HSXKPasswd Config object or a plain object with valid value for the keys padding_digits_before & padding_digits_after');
-	        }
-	        if(!(is.integer(config.padding_digits_before) && is.not.negative(config.padding_digits_before))){
-	            throw new TypeError('config.padding_digits_before must be an integer greater than or equal to zero.');
-	        }
-	        if(!(is.integer(config.padding_digits_after) && is.not.negative(config.padding_digits_after))){
-	            throw new TypeError('config.padding_digits_after must be an integer greater than or equal to zero.');
+	        if(!(config instanceof Config || Config.definesPaddingDigits(config))){
+	            throw new TypeError('config must be an HSXKPasswd Config object or a plain object with valid values for the keys padding_digits_before & padding_digits_after');
 	        }
 	        if(!(rns instanceof RandomNumberSource && rns.sync)){
 	            throw new TypeError('rns must be a RandomNumberSource object supporting synchronous random number generation');
@@ -34713,6 +34921,84 @@
 	    }
 	    
 	    /**
+	     * Synchronously add the appropriate padding characters to the start and/or end of a string. 
+	     *
+	     * @param {string} str - The string to add the padding symbols to.
+	     * @param {(Object|Config)} config - A config object to control the generation of the separator character. Can be an instance of Config, or any object that defines a valid combination of the keys `padding_type`, `padding_character`, `padding_alphabet`, `symbol_alphabet`, `padding_characters_before`, `padding_characters_after` & `pad_to_length`.
+	     * @param {RandomNumberSource} rns - A RandomNumberSource object with a syncronous random number generator.
+	     * @param {string} separatorCharacter - The separator character in use, if any.
+	     * @return {string}
+	     * @throws {TypeError} A Type Error is thrown on invalid args.
+	     */
+	    static addPaddingCharactersSync(str, config, rns, separatorCharacter){
+	        if(is.not.string(str)){
+	            throw new TypeError('str must be a string');
+	        }
+	        if(!(config instanceof Config || Config.definesPaddingCharacters(config))){
+	            throw new TypeError('config must be an HSXKPasswd Config object or a plain object with valid values for config keys defining character padding');
+	        }
+	        if(!(rns instanceof RandomNumberSource && rns.sync)){
+	            throw new TypeError('rns must be a RandomNumberSource object supporting synchronous random number generation');
+	        }
+	        if(is.not.string(separatorCharacter) || separatorCharacter.length > 1){
+	            throw new TypeError('separatorCharacter required and must be a single character string or an empty string');
+	        }
+	        
+	        // short-curcuit padding_type NONE
+	        if(config.padding_type === 'NONE') return str;
+	        
+	        // figure out what character to pad with
+	        let padChar = '';
+	        switch(config.padding_character){
+	            case 'RANDOM':
+	                if(is.array(config.padding_alphabet)){
+	                    padChar = rns.randomItemSync(config.padding_alphabet);
+	                }else if(is.array(config.symbol_alphabet)){
+	                    padChar = rns.randomItemSync(config.symbol_alphabet);
+	                }else{
+	                    throw new TypeError('no alphabet found'); // should not be possible
+	                }
+	                break;
+	            case 'SEPARATOR':
+	                padChar = separatorCharacter;
+	                break;
+	            default:
+	                padChar = config.padding_character;
+	        }
+	        
+	        // figure out what type of padding to apply
+	        let ans = str;
+	        switch(config.padding_type){
+	            case 'NONE':
+	                return str;
+	            case 'FIXED':
+	                for(let i = 0; i < config.padding_characters_before; i++){
+	                    ans = padChar + ans;
+	                }
+	                for(let i = 0; i < config.padding_characters_after; i++){
+	                    ans += padChar;
+	                }
+	                break;
+	            case 'ADAPTIVE':
+	                if(str.length === config.pad_to_length){
+	                    return str;
+	                }else if(str.length > config.pad_to_length){
+	                    ans = ans.slice(0, config.pad_to_length);
+	                }else{
+	                    while(ans.length < config.pad_to_length){
+	                        ans += padChar;
+	                    }
+	                }
+	                break;
+	            default:
+	                throw new TypeError('invalid padding type'); // should not be possible
+	        }
+	        
+	        // return the padded string
+	        return ans;
+	    }
+	    
+	    /**
 	     * Synchronously Apply the appropraite case transformations to an array of words. Changes are applied in-place. The array is returned purely for convenience. 
 	     *
 	     * @param {String[]} words - The array contianing the words to be transformed. The contents of this array will be altered in-place.
@@ -34725,8 +35011,8 @@
 	        if(!(is.array(words) && is.all.string(words))){
 	            throw new TypeError('words must be an array of strings');
 	        }
-	        if(!((config instanceof Config || (is.object(config)) && is.string(config.case_transform)))){
-	            throw new TypeError('config must be an HSXKPasswd Config object or a plain object with a valid value for the key case_transform');
+	        if(!(config instanceof Config || Config.definesCaseTransformation(config))){
+	            throw new TypeError('config must be an HSXKPasswd Config object or a plain object with valid values for config key case_transform');
 	        }
 	        if(!(rns instanceof RandomNumberSource && rns.sync)){
 	            throw new TypeError('rns must be a RandomNumberSource object supporting synchronous random number generation');
@@ -34783,7 +35069,7 @@
 	                }
 	                break;
 	            default:
-	                throw new TypeError(`invalid case_transform '${config.case_transform}'`);
+	                throw new TypeError(`invalid case_transform '${config.case_transform}'`); // should not be possible!
 	        }
 	        
 	        // return a reference to the passed array
@@ -34816,6 +35102,7 @@
 	        // get the word list for the given config
 	        // returned words have accents removed if needed and any defined character replacements applied
 	        const words = dict.filteredWords(config);
+	        console.log(words.length);
 	        
 	        // build the passwords
 	        const ans = [];
@@ -34823,7 +35110,7 @@
 	            // start with a list of random words
 	            const parts = [];
 	            for(const randNum of rns.randomNumbersSync(config.num_words)){
-	                parts.push(words[RandomNumberSource.randIndex(randNum, words.length)]);
+	                parts.push(words[RandomNumberSource.randomIndexFromRandomNumber(randNum, words.length)]);
 	            }
 	            
 	            // apply any needed case transforms
@@ -34837,7 +35124,7 @@
 	            const pass = parts.join(sep);
 	        
 	            // add the requested padding symbols, if any
-	            // TO DO - LEFT OFF HERE!!!
+	            pass = this.addPaddingCharactersSync(pass, config, rns, sep);
 	            
 	            ans.push(pass);
 	        }while(ans.length < n);
@@ -34849,7 +35136,7 @@
 	    /**
 	     * Synchronously determine or randomly select a separator based on a given configuration file. 
 	     *
-	     * @param {(Object|Config)} config - A config object to control the number of digits inserted (if any). Can be an instance of Config, or any object that defines a valid combinatino of the keys `separator_character`, `separator_alphabet` & `symbol_alphabet`.
+	     * @param {(Object|Config)} config - A config object to control the generation of the separator character. Can be an instance of Config, or any object that defines a valid combinatino of the keys `separator_character`, `separator_alphabet` & `symbol_alphabet`.
 	     * @param {RandomNumberSource} rns - A RandomNumberSource object with a syncronous random number generator.
 	     * @return {string} A separator character or the empty string.
 	     * @throws {TypeError} A Type Error is thrown on invalid args.

@@ -201,10 +201,10 @@ class Dictionary{
         
         // validate constraints
         if(is.not.object(constraints)) throw new TypeError('constraints are required and must be passed as an object');
-        if(!(is.integer(constraints.word_length_min) && is.above(constraints.word_length_min, Dictionary.MIN_WORD_LENGTH))){
+        if(!(is.integer(constraints.word_length_min) && constraints.word_length_min >= Dictionary.MIN_WORD_LENGTH)){
             throw new TypeError(`constraints.word_length_min must be an integer greater than or equal to ${Dictionary.MIN_WORD_LENGTH} and less than or equal to word_length_max`);
         }
-        if(!(is.integer(constraints.word_length_max) && is.above(constraints.word_length_max, Dictionary.MIN_WORD_LENGTH))){
+        if(!(is.integer(constraints.word_length_max) && constraints.word_length_max >= Dictionary.MIN_WORD_LENGTH)){
             throw new TypeError(`constraints.word_length_max must be an integer greater than or equal to ${Dictionary.MIN_WORD_LENGTH} and greater than or equal to word_length_min`);
         }
         if(constraints.word_length_min > constraints.word_length_max){

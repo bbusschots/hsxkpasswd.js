@@ -21,14 +21,8 @@ class Generator{
         if(!(is.array(words) && is.all.string(words))){
             throw new TypeError('words must be an array of strings');
         }
-        if(!(config instanceof Config || is.object(config))){
-            throw new TypeError('config must be an HSXKPasswd Config object or a plain object with valid value for the keys padding_digits_before & padding_digits_after');
-        }
-        if(!(is.integer(config.padding_digits_before) && is.not.negative(config.padding_digits_before))){
-            throw new TypeError('config.padding_digits_before must be an integer greater than or equal to zero.');
-        }
-        if(!(is.integer(config.padding_digits_after) && is.not.negative(config.padding_digits_after))){
-            throw new TypeError('config.padding_digits_after must be an integer greater than or equal to zero.');
+        if(!(config instanceof Config || Config.definesPaddingDigits(config))){
+            throw new TypeError('config must be an HSXKPasswd Config object or a plain object with valid values for the keys padding_digits_before & padding_digits_after');
         }
         if(!(rns instanceof RandomNumberSource && rns.sync)){
             throw new TypeError('rns must be a RandomNumberSource object supporting synchronous random number generation');
@@ -49,6 +43,84 @@ class Generator{
     }
     
     /**
+     * Synchronously add the appropriate padding characters to the start and/or end of a string. 
+     *
+     * @param {string} str - The string to add the padding symbols to.
+     * @param {(Object|Config)} config - A config object to control the generation of the separator character. Can be an instance of Config, or any object that defines a valid combination of the keys `padding_type`, `padding_character`, `padding_alphabet`, `symbol_alphabet`, `padding_characters_before`, `padding_characters_after` & `pad_to_length`.
+     * @param {RandomNumberSource} rns - A RandomNumberSource object with a syncronous random number generator.
+     * @param {string} separatorCharacter - The separator character in use, if any.
+     * @return {string}
+     * @throws {TypeError} A Type Error is thrown on invalid args.
+     */
+    static addPaddingCharactersSync(str, config, rns, separatorCharacter){
+        if(is.not.string(str)){
+            throw new TypeError('str must be a string');
+        }
+        if(!(config instanceof Config || Config.definesPaddingCharacters(config))){
+            throw new TypeError('config must be an HSXKPasswd Config object or a plain object with valid values for config keys defining character padding');
+        }
+        if(!(rns instanceof RandomNumberSource && rns.sync)){
+            throw new TypeError('rns must be a RandomNumberSource object supporting synchronous random number generation');
+        }
+        if(is.not.string(separatorCharacter) || separatorCharacter.length > 1){
+            throw new TypeError('separatorCharacter required and must be a single character string or an empty string');
+        }
+        
+        // short-curcuit padding_type NONE
+        if(config.padding_type === 'NONE') return str;
+        
+        // figure out what character to pad with
+        let padChar = '';
+        switch(config.padding_character){
+            case 'RANDOM':
+                if(is.array(config.padding_alphabet)){
+                    padChar = rns.randomItemSync(config.padding_alphabet);
+                }else if(is.array(config.symbol_alphabet)){
+                    padChar = rns.randomItemSync(config.symbol_alphabet);
+                }else{
+                    throw new TypeError('no alphabet found'); // should not be possible
+                }
+                break;
+            case 'SEPARATOR':
+                padChar = separatorCharacter;
+                break;
+            default:
+                padChar = config.padding_character;
+        }
+        
+        // figure out what type of padding to apply
+        let ans = str;
+        switch(config.padding_type){
+            case 'NONE':
+                return str;
+            case 'FIXED':
+                for(let i = 0; i < config.padding_characters_before; i++){
+                    ans = padChar + ans;
+                }
+                for(let i = 0; i < config.padding_characters_after; i++){
+                    ans += padChar;
+                }
+                break;
+            case 'ADAPTIVE':
+                if(str.length === config.pad_to_length){
+                    return str;
+                }else if(str.length > config.pad_to_length){
+                    ans = ans.slice(0, config.pad_to_length);
+                }else{
+                    while(ans.length < config.pad_to_length){
+                        ans += padChar;
+                    }
+                }
+                break;
+            default:
+                throw new TypeError('invalid padding type'); // should not be possible
+        }
+        
+        // return the padded string
+        return ans;
+    }
+    
+    /**
      * Synchronously Apply the appropraite case transformations to an array of words. Changes are applied in-place. The array is returned purely for convenience. 
      *
      * @param {String[]} words - The array contianing the words to be transformed. The contents of this array will be altered in-place.
@@ -61,8 +133,8 @@ class Generator{
         if(!(is.array(words) && is.all.string(words))){
             throw new TypeError('words must be an array of strings');
         }
-        if(!((config instanceof Config || (is.object(config)) && is.string(config.case_transform)))){
-            throw new TypeError('config must be an HSXKPasswd Config object or a plain object with a valid value for the key case_transform');
+        if(!(config instanceof Config || Config.definesCaseTransformation(config))){
+            throw new TypeError('config must be an HSXKPasswd Config object or a plain object with valid values for config key case_transform');
         }
         if(!(rns instanceof RandomNumberSource && rns.sync)){
             throw new TypeError('rns must be a RandomNumberSource object supporting synchronous random number generation');
@@ -119,7 +191,7 @@ class Generator{
                 }
                 break;
             default:
-                throw new TypeError(`invalid case_transform '${config.case_transform}'`);
+                throw new TypeError(`invalid case_transform '${config.case_transform}'`); // should not be possible!
         }
         
         // return a reference to the passed array
@@ -159,7 +231,7 @@ class Generator{
             // start with a list of random words
             const parts = [];
             for(const randNum of rns.randomNumbersSync(config.num_words)){
-                parts.push(words[RandomNumberSource.randIndex(randNum, words.length)]);
+                parts.push(words[RandomNumberSource.randomIndexFromRandomNumber(randNum, words.length)]);
             }
             
             // apply any needed case transforms
@@ -173,7 +245,7 @@ class Generator{
             const pass = parts.join(sep);
         
             // add the requested padding symbols, if any
-            // TO DO - LEFT OFF HERE!!!
+            pass = this.addPaddingCharactersSync(pass, config, rns, sep);
             
             ans.push(pass);
         }while(ans.length < n);
@@ -185,7 +257,7 @@ class Generator{
     /**
      * Synchronously determine or randomly select a separator based on a given configuration file. 
      *
-     * @param {(Object|Config)} config - A config object to control the number of digits inserted (if any). Can be an instance of Config, or any object that defines a valid combinatino of the keys `separator_character`, `separator_alphabet` & `symbol_alphabet`.
+     * @param {(Object|Config)} config - A config object to control the generation of the separator character. Can be an instance of Config, or any object that defines a valid combinatino of the keys `separator_character`, `separator_alphabet` & `symbol_alphabet`.
      * @param {RandomNumberSource} rns - A RandomNumberSource object with a syncronous random number generator.
      * @return {string} A separator character or the empty string.
      * @throws {TypeError} A Type Error is thrown on invalid args.

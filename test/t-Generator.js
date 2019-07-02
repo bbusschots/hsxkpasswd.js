@@ -1,4 +1,51 @@
 QUnit.module('HSXKPasswd.Generator Class', function(){
+    QUnit.test('add padding characters synchronously', function(a){
+        a.expect(7);
+        
+        // make sure the function exists
+        a.ok(is.function(HSXKPasswd.Generator.addPaddingCharactersSync), 'function exists');
+        
+        // dummy input
+        const testInput = 'ALTERNATING-case-WORDS-90';
+        const testSep = '-';
+        
+        // a basic random number source
+        const testRNS = new HSXKPasswd.RandomNumberSource();
+        
+        // make sure the function returns the expected type
+        const testOut = HSXKPasswd.Generator.addPaddingCharactersSync(testInput, { padding_type: 'NONE' }, testRNS, testSep);
+        a.ok(is.string(testOut), 'returns a string');
+        
+        // test each padding type
+        a.strictEqual(
+            HSXKPasswd.Generator.addPaddingCharactersSync(testInput, { padding_type: 'NONE' }, testRNS, ''),
+            testInput,
+            'padding_type NONE returns input un-altered'
+        );
+        a.strictEqual(
+            HSXKPasswd.Generator.addPaddingCharactersSync(testInput, { padding_type: 'FIXED', padding_character: '+', padding_characters_before: 1, padding_characters_after: 3 }, testRNS, testSep),
+            `+${testInput}+++`,
+            'padding_type FIXED returns exected value'
+        );
+        a.strictEqual(
+            HSXKPasswd.Generator.addPaddingCharactersSync(testInput, { padding_type: 'ADAPTIVE', padding_character: '+', pad_to_length: 30 }, testRNS, testSep),
+            'ALTERNATING-case-WORDS-90+++++',
+            'padding_type FIXED returns exected value'
+        );
+        
+        // test each special separator type
+        a.strictEqual(
+            HSXKPasswd.Generator.addPaddingCharactersSync(testInput, { padding_type: 'FIXED', padding_character: 'SEPARATOR', padding_characters_before: 1, padding_characters_after: 1 }, testRNS, testSep),
+            `${testSep}${testInput}${testSep}`,
+            'padding_character SEPARATOR returns exected value'
+        );
+        const rand = HSXKPasswd.Generator.addPaddingCharactersSync(testInput, { padding_type: 'FIXED', padding_character: 'RANDOM', padding_characters_before: 1, padding_characters_after: 1, padding_alphabet: ['+', '-'] }, testRNS, testSep);
+        a.ok(
+            rand === `+${testInput}+` || rand === `-${testInput}-`,
+            'padding_character RANDOM returns exected value'
+        );
+    });
+    
     QUnit.test('add padding digits synchronously', function(a){
         a.expect(9);
         
@@ -139,6 +186,27 @@ QUnit.module('HSXKPasswd.Generator Class', function(){
         a.strictEqual(HSXKPasswd.Generator.generateSeparatorSync({ separator_character: '-' }, testRNS), '-', 'specified separator_character returns expected value');
         const sep = HSXKPasswd.Generator.generateSeparatorSync({ separator_character: 'RANDOM', symbol_alphabet: ['-', '+'] }, testRNS);
         a.ok(is.string(sep) && sep.length === 1, 'separator_character=RANDOM returns expected value');
+    });
+    
+    QUnit.test('generate password synchronously', function(a){
+        a.expect(2);
+        
+        // make sure the function exists
+        a.ok(is.function(HSXKPasswd.Generator.generatePasswordsSync), 'function exists');
+        
+        // a basic config
+        const testConf = new HSXKPasswd.Config();
+        //console.log(testConf);
+        
+        // a basic dictionary
+        const testDict = new HSXKPasswd.Dictionary();
+        
+        // a basic random number source
+        const testRNS = new HSXKPasswd.RandomNumberSource();
+        
+        // try generate a password with all the defaults and make sure a string is returned
+        const testDefault = HSXKPasswd.Generator.generatePasswordsSync(testConf, testDict, testRNS);
+        a.ok(is.array(testDefault) && testDefault.length === 1 && is.string(testDefault[0]) && testDefault[0].length > 0, 'returns a string');
     });
     
     QUnit.test('default constructor', function(a){
