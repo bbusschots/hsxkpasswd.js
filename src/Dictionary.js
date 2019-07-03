@@ -137,6 +137,17 @@ class Dictionary{
     }
     
     /**
+     * Assert that the dictionary is ready.
+     *
+     * @return {boolean} Always returns `true`.
+     * @throws {Error} Throws an Error if the dictionary is not ready.
+     */
+    assertReady(){
+        if(!this.ready) throw new Error('dictionary not ready');
+        return true;
+    }
+    
+    /**
      * Build a word list from an array of strings.
      *
      * Each word in the array will be sanitized before being included in the list, and words that are too short will be omitted from the list. Anything in the array that is not a string will be ignored.

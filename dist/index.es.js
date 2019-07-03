@@ -34386,6 +34386,17 @@ class Dictionary{
     }
     
     /**
+     * Assert that the dictionary is ready.
+     *
+     * @return {boolean} Always returns `true`.
+     * @throws {Error} Throws an Error if the dictionary is not ready.
+     */
+    assertReady(){
+        if(!this.ready) throw new Error('dictionary not ready');
+        return true;
+    }
+    
+    /**
      * Build a word list from an array of strings.
      *
      * Each word in the array will be sanitized before being included in the list, and words that are too short will be omitted from the list. Anything in the array that is not a string will be ignored.
@@ -34945,9 +34956,9 @@ class Generator{
         let padChar = '';
         switch(config.padding_character){
             case 'RANDOM':
-                if(is.array(config.padding_alphabet)){
+                if(Config.isAlphabet(config.padding_alphabet)){
                     padChar = rns.randomItemSync(config.padding_alphabet);
-                }else if(is.array(config.symbol_alphabet)){
+                }else if(Config.isAlphabet(config.symbol_alphabet)){
                     padChar = rns.randomItemSync(config.symbol_alphabet);
                 }else{
                     throw new TypeError('no alphabet found'); // should not be possible
@@ -35077,6 +35088,9 @@ class Generator{
      * @param {Dictionary} dict
      * @param {RandomNumberSource} rns
      * @param {number} [n=1]
+     * @return {string}
+     * @throws {TypeError} A Type Error is thrown if invalid args are passed.
+     * @throws {Error} An Error is thrown if the passed dictionary is not ready.
      */
     static generatePasswordsSync(config, dict, rns, n=1){
         // validate args
@@ -35084,10 +35098,11 @@ class Generator{
             throw new TypeError('config must be a Config object');
         }
         if(!(dict instanceof Dictionary)){
-            throw new TypeError('config must be a Dictionary object');
+            throw new TypeError('dict must be a Dictionary object');
         }
+        dict.assertReady();
         if(!(rns instanceof RandomNumberSource)){
-            throw new TypeError('config must be a RandomNumberSource object');
+            throw new TypeError('rns must be a RandomNumberSource object');
         }
         if(is.not.integer(n) || is.not.positive(n)){
             throw new TypeError('n must be a positibe integer');
@@ -35096,7 +35111,6 @@ class Generator{
         // get the word list for the given config
         // returned words have accents removed if needed and any defined character replacements applied
         const words = dict.filteredWords(config);
-        console.log(words.length);
         
         // build the passwords
         const ans = [];
@@ -35115,7 +35129,7 @@ class Generator{
         
             // join the parts into a single string with the appropriate separator
             const sep = this.generateSeparatorSync(config, rns);
-            const pass = parts.join(sep);
+            let pass = parts.join(sep);
         
             // add the requested padding symbols, if any
             pass = this.addPaddingCharactersSync(pass, config, rns, sep);
@@ -35136,20 +35150,11 @@ class Generator{
      * @throws {TypeError} A Type Error is thrown on invalid args.
      */
     static generateSeparatorSync(config, rns){
-        if(!(config instanceof Config || is.object(config))){
+        if(!(config instanceof Config || Config.definesSeparator(config))){
             throw new TypeError('config must be an HSXKPasswd Config object or a plain object with valid combination of values for the keys separator_character, separator_alphabet & symbol_alphabet');
         }
         if(!(rns instanceof RandomNumberSource)){
             throw new TypeError('config must be a RandomNumberSource object');
-        }
-        if(is.not.string(config.separator_character)){
-            throw new TypeError('config.separator_character must be a string');
-        }
-        if(is.not.undefined(config.separator_alphabet) && !Config.isAlphabet(config.separator_alphabet)){
-            throw new TypeError('if present, config.separator_alphabet must be an array of single-character strings');
-        }
-        if(is.not.undefined(config.symbol_alphabet) && !Config.isAlphabet(config.symbol_alphabet)){
-            throw new TypeError('if present, config.symbol_alphabet must be an array of single-character strings');
         }
         
         // figure out what separator type the config specifies
@@ -35160,18 +35165,21 @@ class Generator{
         }else if(config.separator_character === 'RANDOM'){
             // figure out which alphabet to use
             let alphabet = [];
-            if(config.separator_alphabet){
+            if(Config.isAlphabet(config.separator_alphabet)){
                 alphabet = config.separator_alphabet;
-            }else if(config.symbol_alphabet){
+            }else if(Config.isAlphabet(config.symbol_alphabet)){
                 alphabet = config.symbol_alphabet;
             }else{
-                throw new TypeError('config.separator_character=RANDOM but neither config.separator_alphabet nor config.symbol_alphabet are defined');
+                throw new TypeError('config.separator_character=RANDOM but neither config.separator_alphabet nor config.symbol_alphabet are defined'); // should not be possible
             }
+            
+            // if there's only one character in the alphabet, return it
+            if(alphabet.length === 1) return alphabet[0];
             
             // return a random character from the alphabet
             return alphabet[rns.randomIndexSync(alphabet.length)];
         }else{
-            throw new TypeError('invalid config.separator_character');
+            throw new TypeError('invalid config.separator_character'); // should not be possible
         }
     }
     

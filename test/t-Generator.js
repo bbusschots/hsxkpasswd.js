@@ -199,7 +199,7 @@ QUnit.module('HSXKPasswd.Generator Class', function(){
         //console.log(testConf);
         
         // a basic dictionary
-        const testDict = new HSXKPasswd.Dictionary();
+        const testDict = HSXKPasswd.Dictionary.defaultDictionary();
         
         // a basic random number source
         const testRNS = new HSXKPasswd.RandomNumberSource();
