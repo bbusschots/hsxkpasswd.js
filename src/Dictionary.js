@@ -1,6 +1,7 @@
 import diacritics from 'diacritics';
 import is from 'is_js';
 import XRegExp from 'xregexp';
+import Config from './Config.js';
 import DEFAULT_WORD_LIST from './wordLists/EN_default.js';
 
 /**
@@ -197,7 +198,7 @@ class Dictionary{
     /**
      * Get the words for a given set of constraints.
      *
-     * @param {Object} constraints - An object specifting the constraints. Usually an HSXKPasswd Config object.
+     * @param {(Config|Object)} constraints - An object specifting the constraints. Usually an HSXKPasswd Config object.
      * @param {number} constraints.word_length_min - the minimum length of words to include.
      * @param {number} constraints.word_length_max - the maximum length of words to include.
      * @param {boolean} [constraints.allow_accents=false] - whether or not accents should be stripped from accented characters. Defaults to false.
@@ -211,23 +212,8 @@ class Dictionary{
         if(!this.ready) throw new Error('Dictionary not ready');
         
         // validate constraints
-        if(is.not.object(constraints)) throw new TypeError('constraints are required and must be passed as an object');
-        if(!(is.integer(constraints.word_length_min) && constraints.word_length_min >= Dictionary.MIN_WORD_LENGTH)){
-            throw new TypeError(`constraints.word_length_min must be an integer greater than or equal to ${Dictionary.MIN_WORD_LENGTH} and less than or equal to word_length_max`);
-        }
-        if(!(is.integer(constraints.word_length_max) && constraints.word_length_max >= Dictionary.MIN_WORD_LENGTH)){
-            throw new TypeError(`constraints.word_length_max must be an integer greater than or equal to ${Dictionary.MIN_WORD_LENGTH} and greater than or equal to word_length_min`);
-        }
-        if(constraints.word_length_min > constraints.word_length_max){
-            throw new TypeError('constraints.word_length_min must be less than or equal to constraints.word_length_max');
-        }
-        if(is.not.undefined(constraints.character_substitutions)){
-            const subsErrMsg = 'if present, constraints.character_substitutions must be an object mapping single characters to strings';
-            if(is.not.object(constraints.character_substitutions)) throw new TypeError(subsErrMsg);
-            for(const c of Object.keys(constraints.character_substitutions)){
-                if(!XRegExp.match(c, XRegExp('^\\p{Letter}$'))) throw new TypeError(subsErrMsg);
-                if(is.not.string(constraints.character_substitutions[c])) throw new TypeError(subsErrMsg);
-            }
+        if(!(constraints instanceof Config || Config.definesWordConstraints(constraints))){
+            throw new TypeError('constraints must be an HSXKPasswd Config object or a plain object');
         }
         const validatedConstraints = {
             word_length_min: constraints.word_length_min,

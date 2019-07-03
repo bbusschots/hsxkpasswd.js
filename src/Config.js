@@ -1,5 +1,6 @@
 import _ from 'lodash-es';
 import is from 'is_js';
+import XRegExp from 'xregexp';
 
 /**
  * The default settings.
@@ -24,9 +25,44 @@ const DEFAULT_SETTINGS = {
 };
 
 /**
+ * The limits for various config settings.
+ *
+ * @type {Object}
+ */
+const LIMITS = {
+    num_words: {
+        min: 3
+    },
+    pad_to_length: {
+        min: 12
+    },
+    word_length: {
+        min: 4
+    }
+};
+
+/**
  * An HSXKPAsswd Config.
  */
 class Config{
+    /**
+     * The default settings.
+     *
+     * @type {Object}
+     */
+    static get defaultSettings(){
+        return _.cloneDeep(DEFAULT_SETTINGS);
+    }
+    
+    /**
+     * The limits that apply to various configuration settings.
+     *
+     * @type {Object}
+     */
+    static get limits(){
+        return _.cloneDeep(LIMITS);
+    }
+    
     /**
      * Assert that a given value is a valid alphabet. I.e. if a given value is an array consisting of one or more single-character strings.
      *
@@ -63,6 +99,28 @@ class Config{
         if(!conf.case_transform.match(/^(ALTERNATE)|(CAPITALISE)|(INVERT)|(LOWER)|(NONE)|(RANDOM)|(UPPER)$/)){
             throw new TypeError('invalid case_transform');
         }
+        return true;
+    }
+    
+    /**
+     * Assert that a given object defines a complete and valid config.
+     *
+     * @param {*} conf - The value to test.
+     * @return {boolean} - Always returns `true`.
+     * @throws {TypeError} A TypeError is thrown if the passed object does not define a complete configuration.
+     */
+    static assertCompleteConfig(conf){
+        // make sure we have an object
+        if(is.not.object(conf)) throw new TypeError('config must be an object');
+        
+        // assert each aspect of the config
+        this.assertCaseTransformation(conf);
+        this.assertPaddingCharacters(conf);
+        this.assertPaddingDigits(conf);
+        this.assertSeparator(conf);
+        this.assertWords(conf);
+        
+        // if we got here, all is well
         return true;
     }
     
@@ -114,8 +172,8 @@ class Config{
                 throw new TypeError('padding_characters_after must be an integer greater than or equal to zero');
             }
         }else if(conf.padding_type === 'ADAPTIVE'){
-            if(is.not.integer(conf.pad_to_length) || is.under(conf.pad_to_length, 12)){
-                throw new TypeError('invalid pad_to_length, must be an integer greater than or equal to 12');
+            if(is.not.integer(conf.pad_to_length) || is.under(conf.pad_to_length, LIMITS.pad_to_length.min)){
+                throw new TypeError(`invalid pad_to_length, must be an integer greater than or equal to ${LIMITS.pad_to_length.min}`);
             }
         }else{
             throw new TypeError("invalid padding_type, must be one of 'NONE', 'FIXED', or 'ADAPTIVE'");
@@ -186,6 +244,83 @@ class Config{
     }
     
     /**
+     * Assert that a given object defines valid word constraints. Invalid values will result in a Type Error.
+     *
+     * The object must provide the keys `word_length_min` & `word_length_max`.
+     *
+     * The object can also optionally provide the following keys:
+     * * `allow_accents - if present it must be a primitive value.
+     * * `character_substitutions` - if present must be an object mapping single letters to non-empty strings.
+     *
+     * @param {*} conf - The value to test.
+     * @return {boolean} - Always returns `true`.
+     * @throws {TypeError} A TypeError is thrown if the passed object does not define valid word constraints.
+     */
+    static assertWordConstraints(conf){
+        // make sure we have an object
+        if(is.not.object(conf)) throw new TypeError('config must be an object');
+        
+        // make sure we have valid length constraints
+        if(is.not.integer(conf.word_length_min) || is.under(conf.word_length_min, LIMITS.word_length.min)){
+            throw new TypeError(`word_length_min must be an integer greater than or equal to ${LIMITS.num_words.min}`);
+        }
+        if(is.not.integer(conf.word_length_max) || is.under(conf.word_length_max, LIMITS.word_length.min)){
+            throw new TypeError(`word_length_max must be an integer greater than or equal to ${LIMITS.num_words.min}`);
+        }
+        if(conf.word_length_min > conf.word_length_max){
+            throw new TypeError('word_length_min must be less than or equal to word_length_max');
+        }
+        
+        // if present, make sure allow_accents is valid
+        if(is.not.undefined(conf.allow_accents)){
+            if(!(is.boolean(conf.allow_accents) || is.string(conf.allow_accents) || is.number(conf.allow_accents))){
+                throw new TypeError('if present, allow_accents must be a primitive value, ideally a boolean');
+            }
+        }
+        
+        // if present, make sure character_substitutions is valid
+        if(is.not.undefined(conf.character_substitutions)){
+            if(is.not.object(conf.character_substitutions)){
+                throw new TypeError('if present, character_substitutions must be an object');
+            }
+            for(const c of Object.keys(conf.character_substitutions)){
+                if(is.not.string(c) || !XRegExp.match(c, XRegExp('^\\p{Letter}$'))) throw new TypeError('character_substitutions keys must be single-letter strings');
+                const sub = conf.character_substitutions[c];
+                if(is.not.string(sub) || is.empty(sub)) throw new TypeError('character_substitutions values must be non-empty strings');
+            }
+        }
+        
+        // if we got here, all is well
+        return true;
+    }
+    
+    /**
+     * Assert that a given object defines the number of words to include in a password as well as valid word constraints. Invalid values will result in a Type Error.
+     *
+     * The object must provide the keys `num_words`, `word_length_min` & `word_length_max`.
+     *
+     * The object can also optionally provide the following keys:
+     * * `allow_accents - if present it must be a primitive value.
+     * * `character_substitutions` - if present must be an object mapping single letters to non-empty strings.
+     *
+     * @param {*} conf - The value to test.
+     * @return {boolean} - Always returns `true`.
+     * @throws {TypeError} A TypeError is thrown if the passed object does not define valid word constraints.
+     */
+    static assertWords(conf){
+        // make sure we have all the word constraints
+        this.assertWordConstraints(conf);
+        
+        // make sure we have a valid number of words
+        if(is.not.integer(conf.num_words) || is.under(conf.num_words, LIMITS.num_words.min)){
+            throw new TypeError(`num_words must be an integer greater than or equal to ${LIMITS.num_words.min}`);
+        }
+        
+        // if we got here, all is well
+        return true;
+    }
+    
+    /**
      * Test if a given value is an object that defines the config keys needed to specify case transformations.
      *
      * @param {*} val - The value to test.
@@ -194,6 +329,21 @@ class Config{
     static definesCaseTransformation(val){
         try{
             this.assertCaseTransformation(val);
+        }catch(err){
+            return false;
+        }
+        return true;
+    }
+    
+    /**
+     * Test if a given value is an object that defines a compelte and valid config.
+     *
+     * @param {*} val - The value to test.
+     * @return {boolean}
+     */
+    static definesCompleteConfig(val){
+        try{
+            this.assertCompleteConfig(val);
         }catch(err){
             return false;
         }
@@ -246,6 +396,36 @@ class Config{
     }
     
     /**
+     * Test if a given value is an object that defines the config keys needed to specify a word constraints.
+     *
+     * @param {*} val - The value to test.
+     * @return {boolean}
+     */
+    static definesWordConstraints(val){
+        try{
+            this.assertWordConstraints(val);
+        }catch(err){
+            return false;
+        }
+        return true;
+    }
+    
+    /**
+     * Test if a given value is an object that defines the config keys needed to specify the number of words and word constraints.
+     *
+     * @param {*} val - The value to test.
+     * @return {boolean}
+     */
+    static definesWords(val){
+        try{
+            this.assertWords(val);
+        }catch(err){
+            return false;
+        }
+        return true;
+    }
+    
+    /**
      * Test if a given value is a valid alphabet. I.e. if a given value is an array consisting of one or more single-character strings.
      *
      * @param {*} val - The value to test
@@ -268,10 +448,10 @@ class Config{
     constructor(settings){
         if(is.undefined(settings)){
             this._settings = _.cloneDeep(DEFAULT_SETTINGS);
-        }else if(is.object(settings)){
+        }else if(this.constructor.definesCompleteConfig(settings)){
             this._settings = _.cloneDeep(settings);
         }else{
-            throw new TypeError('settings must be a plain object');
+            throw new TypeError('settings must be a plain object defining a complete and valid configuration');
         }
     }
     

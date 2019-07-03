@@ -18804,774 +18804,6 @@
 	  lodash.prototype[symIterator$1] = seq.toIterator;
 	}
 
-	/**
-	 * The default settings.
-	 *
-	 * @type {Object}
-	 */
-	const DEFAULT_SETTINGS = {
-	    allow_accents: false,
-	    case_transform: 'CAPITALISE',
-	    character_substitutions: {},
-	    num_words: 3,
-	    padding_character: 'RANDOM',
-	    padding_characters_before: 2,
-	    padding_characters_after: 2,
-	    padding_digits_before: 2,
-	    padding_digits_after: 2,
-	    padding_type: 'FIXED',
-	    separator_character: 'RANDOM',
-	    symbol_alphabet: ['!', '@', '$', '%', '^', '&', '*', '-', '_', '+', '=', ':', '|', '~', '?', '/', '.', ';'],
-	    word_length_min: 4,
-	    word_length_max: 8
-	};
-
-	/**
-	 * An HSXKPAsswd Config.
-	 */
-	class Config{
-	    /**
-	     * Assert that a given value is a valid alphabet. I.e. if a given value is an array consisting of one or more single-character strings.
-	     *
-	     * A Type Error is thrown if the value is not valid.
-	     *
-	     * @param {*} val - The value to test
-	     * @return {boolean} Always returns `true`.
-	     * @throws {TypeError} A Type Error is thrown if the value is not a valid alphabet.
-	     */
-	    static assertAlphabet(val){
-	        if(is.not.array(val)) throw new TypeError('alphabet must be an array');
-	        if(val.length < 1) throw new TypeError('alphabet must contain at least one character');
-	        if(!is.all.string(val)) throw new TypeError('alphabet contains a value that is not a string');
-	        for(const i of val){
-	            if(i.length !== 1) throw new TypeError('alphabet contains a string that is not exactly one character long');
-	        }
-	        return true;
-	    }
-	    
-	    /**
-	     * Assert that a given object defines a valid case transformation configuration. Invalid values will result in a Type Error.
-	     *
-	     * The object must provide the key `case_transform` with one of the following valid values; `ALTERNATE`, `CAPITALISE`, `INVERT`, `LOWER`, `NONE`, `RANDOM`, or `UPPER`.
-	     *
-	     * @param {*} conf - The value to test.
-	     * @return {boolean} - Always returns `true`.
-	     * @throws {TypeError} A TypeError is thrown if the passed object does not define a valid case transformation configuration.
-	     */
-	    static assertCaseTransformation(conf){
-	        if(is.not.object(conf)) throw new TypeError('config must be an object');
-	        if(is.not.string(conf.case_transform)){
-	            throw new TypeError('case_transform must be a string');
-	        }
-	        if(!conf.case_transform.match(/^(ALTERNATE)|(CAPITALISE)|(INVERT)|(LOWER)|(NONE)|(RANDOM)|(UPPER)$/)){
-	            throw new TypeError('invalid case_transform');
-	        }
-	        return true;
-	    }
-	    
-	    /**
-	     * Assert that a given object defines a valid padding character configuration. Invalid values will result in a Type Error.
-	     *
-	     * The object must provide the key `padding_type`. The minimum valid configuation is `{ padding_type: 'NONE' }`.
-	     *
-	     * For all padding types other than `NONE` `padding_character` is also required.
-	     *
-	     * For `padding_type='FIXED'` both `padding_characters_before` & `padding_characters_after` are required.
-	     *
-	     * For `padding_type='ADAPTIVE'` `pad_to_length` is required.
-	     *
-	     * For `padding_character='RANDOM'` one of `padding_alphabet` or `symbol_alphabet` is required.
-	     *
-	     * @param {*} conf - The value to test.
-	     * @return {boolean} - Always returns `true`.
-	     * @throws {TypeError} A TypeError is thrown if the passed object does not define a valid padding configuration.
-	     */
-	    static assertPaddingCharacters(conf){
-	        // make sure we have an object that defines a padding type
-	        if(is.not.object(conf)) throw new TypeError('config must be an object');
-	        if(is.not.string(conf.padding_type)){
-	            throw new TypeError('padding_type must be a string');
-	        }
-	        
-	        // short-circuit no padding
-	        if(conf.padding_type === 'NONE') return true;
-	        
-	        // make sure we have the keys needed to determine the padding character to use
-	        if(is.not.string(conf.padding_character)) throw new TypeError('padding_character must be a string');
-	        if(conf.padding_character === 'RANDOM'){
-	            if(!(this.isAlphabet(conf.padding_alphabet) || this.isAlphabet(conf.symbol_alphabet))){
-	                throw new TypeError('padding_character is RANDOM but neither padding_alphabet nor symbol_alphabet are defined');
-	            }
-	        }else if(conf.padding_character === 'SEPARATOR');else{
-	            if(conf.padding_character.length !== 1) throw new TypeError('invalid padding_character');
-	        }
-	        
-	        // make sure we have the keys needed to determine what the amount of padding to apply
-	        if(conf.padding_type === 'FIXED'){
-	            if(is.not.integer(conf.padding_characters_before) || is.negative(conf.padding_characters_before)){
-	                throw new TypeError('padding_characters_before must be an integer greater than or equal to zero');
-	            }
-	            if(is.not.integer(conf.padding_characters_after) || is.negative(conf.padding_characters_after)){
-	                throw new TypeError('padding_characters_after must be an integer greater than or equal to zero');
-	            }
-	        }else if(conf.padding_type === 'ADAPTIVE'){
-	            if(is.not.integer(conf.pad_to_length) || is.under(conf.pad_to_length, 12)){
-	                throw new TypeError('invalid pad_to_length, must be an integer greater than or equal to 12');
-	            }
-	        }else{
-	            throw new TypeError("invalid padding_type, must be one of 'NONE', 'FIXED', or 'ADAPTIVE'");
-	        }
-	        
-	        // if we got here all is well
-	        return true;
-	    }
-	    
-	    /**
-	     * Assert that a given object defines a valid padding digit configuration. Invalid values will result in a Type Error.
-	     *
-	     * The object must provide the keys `padding_digits_before` & `padding_digits_after`.
-	     *
-	     * @param {*} conf - The value to test.
-	     * @return {boolean} - Always returns `true`.
-	     * @throws {TypeError} A TypeError is thrown if the passed object does not define a valid padding configuration.
-	     */
-	    static assertPaddingDigits(conf){
-	        // make sure we have an object
-	        if(is.not.object(conf)) throw new TypeError('config must be an object');
-	        
-	        // make sure we have valid values for both required keys
-	        if(is.not.integer(conf.padding_digits_before) || is.negative(conf.padding_digits_before)){
-	            throw new TypeError('padding_digits_before must be an integer greater than or equal to zero');
-	        }
-	        if(is.not.integer(conf.padding_digits_after) || is.negative(conf.padding_digits_after)){
-	            throw new TypeError('padding_digits_after must be an integer greater than or equal to zero');
-	        }
-	        
-	        // if we got here all is well
-	        return true;
-	    }
-	    
-	    /**
-	     * Assert that a given object defines a valid padding configuration. Invalid values will result in a Type Error.
-	     *
-	     * The object must provide the key `separator_character`.
-	     *
-	     * For `separator_character='RANDOM'` one of `separator_alphabet` or `symbol_alphabet` is required.
-	     *
-	     * @param {*} conf - The value to test.
-	     * @return {boolean} - Always returns `true`.
-	     * @throws {TypeError} A TypeError is thrown if the passed object does not define a valid padding configuration.
-	     */
-	    static assertSeparator(conf){
-	        // make sure we have an object that defines a padding type
-	        if(is.not.object(conf)) throw new TypeError('config must be an object');
-	        if(is.not.string(conf.separator_character)){
-	            throw new TypeError('separator_character must be a string');
-	        }
-	        
-	        // deal with each possible separator character
-	        if(conf.separator_character === 'NONE'){
-	            return true;
-	        }else if(conf.separator_character === 'RANDOM'){
-	            if(this.isAlphabet(conf.separator_alphabet) || this.isAlphabet(conf.symbol_alphabet)){
-	                return true;
-	            }else{
-	                throw new TypeError('separator_character is RANDOM, but neither separator_alphabet nor symbol_alphabet are defined');
-	            }
-	        }else if(conf.separator_character.length === 1){
-	            return true;
-	        }
-	        
-	        // if we got here the separator character is not valid!
-	        throw new TypeError("invalid separator_character, must be a single character or one of 'NONE' or 'RANDOM'");
-	    }
-	    
-	    /**
-	     * Test if a given value is an object that defines the config keys needed to specify case transformations.
-	     *
-	     * @param {*} val - The value to test.
-	     * @return {boolean}
-	     */
-	    static definesCaseTransformation(val){
-	        try{
-	            this.assertCaseTransformation(val);
-	        }catch(err){
-	            return false;
-	        }
-	        return true;
-	    }
-	    
-	    /**
-	     * Test if a given value is an object that defines the config keys needed to specify password character padding.
-	     *
-	     * @param {*} val - The value to test.
-	     * @return {boolean}
-	     */
-	    static definesPaddingCharacters(val){
-	        try{
-	            this.assertPaddingCharacters(val);
-	        }catch(err){
-	            return false;
-	        }
-	        return true;
-	    }
-	    
-	    /**
-	     * Test if a given value is an object that defines the config keys needed to specify password digit padding.
-	     *
-	     * @param {*} val - The value to test.
-	     * @return {boolean}
-	     */
-	    static definesPaddingDigits(val){
-	        try{
-	            this.assertPaddingDigits(val);
-	        }catch(err){
-	            return false;
-	        }
-	        return true;
-	    }
-	    
-	    /**
-	     * Test if a given value is an object that defines the config keys needed to specify a separatpor.
-	     *
-	     * @param {*} val - The value to test.
-	     * @return {boolean}
-	     */
-	    static definesSeparator(val){
-	        try{
-	            this.assertSeparator(val);
-	        }catch(err){
-	            return false;
-	        }
-	        return true;
-	    }
-	    
-	    /**
-	     * Test if a given value is a valid alphabet. I.e. if a given value is an array consisting of one or more single-character strings.
-	     *
-	     * @param {*} val - The value to test
-	     * @return {boolean}
-	     */
-	    static isAlphabet(val){
-	        try{
-	            this.assertAlphabet(val);
-	        }catch(err){
-	            return false;
-	        }
-	        return true;
-	    }
-	    
-	    /**
-	     * @param {Object} [settings] - The config settings. If no object is passed the default settings are used.
-	     * @throws {TypeError} - A type error is thrown if invalid args are passed.
-	     * @todo Validate settings
-	     */
-	    constructor(settings){
-	        if(is.undefined(settings)){
-	            this._settings = lodash.cloneDeep(DEFAULT_SETTINGS);
-	        }else if(is.object(settings)){
-	            this._settings = lodash.cloneDeep(settings);
-	        }else{
-	            throw new TypeError('settings must be a plain object');
-	        }
-	    }
-	    
-	    /**
-	     * @type {Object}
-	     */
-	    get all(){
-	        return {
-	            allow_accents: this.allow_accents,
-	            case_transform: this.case_transform,
-	            character_substitutions: this.character_substitutions,
-	            num_words: this.num_words,
-	            pad_to_length: this.pad_to_length,
-	            padding_alphabet: this.padding_alphabet,
-	            padding_character: this.padding_character,
-	            padding_characters_before: this.padding_characters_before,
-	            padding_characters_after: this.padding_characters_after,
-	            padding_digits_before: this.padding_digits_before,
-	            padding_digits_after: this.padding_digits_after,
-	            padding_type: this.padding_type,
-	            separator_alphabet: this.separator_alphabet,
-	            separator_character: this.separator_character,
-	            symbol_alphabet: this.symbol_alphabet,
-	            word_length_min: this.word_length_min,
-	            word_length_max: this.word_length_max
-	        };
-	    }
-	    
-	    /**
-	     * @type {boolean}
-	     */
-	    get allow_accents(){
-	        return this._settings.allow_accents ? true : false;
-	    }
-	    get allowAccents(){ return this.allow_accents; }
-	    
-	    /**
-	     * @type {string}
-	     */
-	    get case_transform(){
-	        return this._settings.case_transform;
-	    }
-	    get caseTransform(){ return this.case_transform; }
-	    
-	    /**
-	     * @type {Object}
-	     */
-	    get character_substitutions(){
-	        if(is.object(this._settings.character_substitutions)){
-	            return lodash.cloneDeep(this._settings.character_substitutions);
-	        }
-	        return {};
-	    }
-	    get characterSubstitutions(){ return this.character_substitutions; }
-	    
-	    /**
-	     * @type {number}
-	     */
-	    get num_words(){
-	        return this._settings.num_words;
-	    }
-	    get numWords(){ return this._settings.num_words; }
-	    
-	    /**
-	     * @type {number}
-	     */
-	    get pad_to_length(){
-	        return this._settings.pad_to_length || 12;
-	    }
-	    get padToLength(){ return this.pad_to_length; }
-	    
-	    /**
-	     * @type {String[]}
-	     */
-	    get padding_alphabet(){
-	        if(is.array(this._settings.padding_alphabet)){
-	            return lodash.clone(this._settings.padding_alphabet);
-	        }
-	        return [];
-	    }
-	    get paddingAlphabet(){ return this.padding_alphabet; }
-	    
-	    /**
-	     * @type {String}
-	     */
-	    get padding_character(){
-	        return this._settings.padding_character || '';
-	    }
-	    get paddingCharacter(){ return this.padding_character; }
-	    
-	    /**
-	     * @type {number}
-	     */
-	    get padding_characters_before(){
-	        return this._settings.padding_characters_before || 0;
-	    }
-	    get paddingCharactersBefore(){ return this.padding_characters_before; }
-	    
-	    /**
-	     * @type {number}
-	     */
-	    get padding_characters_after(){
-	        return this._settings.padding_characters_after || 0;
-	    }
-	    get paddingCharactersAfter(){ return this.padding_characters_after; }
-	    
-	    /**
-	     * @type {number}
-	     */
-	    get padding_digits_before(){
-	        return this._settings.padding_digits_before || 0;
-	    }
-	    get paddingDigitsBefore(){ return this.padding_digits_before; };
-	    
-	    /**
-	     * @type {number}
-	     */
-	    get padding_digits_after(){
-	        return this._settings.padding_digits_after || 0;
-	    }
-	    get paddingDigitsAfter(){ return this.padding_digits_after; }
-	    
-	    /**
-	     * @type {String}
-	     */
-	    get padding_type(){
-	        return this._settings.padding_type;
-	    }
-	    get paddingType(){ return this.padding_type; }
-	    
-	    /**
-	     * @type {String[]}
-	     */
-	    get separator_alphabet(){
-	        if(is.array(this._settings.separator_alphabet)){
-	            return lodash.clone(this._settings.separator_alphabet);
-	        }
-	        return [];
-	    }
-	    get separatorAlphabet(){ return this.separator_alphabet; }
-	    
-	    /**
-	     * @type {String}
-	     */
-	    get separator_character(){
-	        return this._settings.separator_character;
-	    }
-	    get separatorCharacter(){ return this.separator_character; }
-	    
-	    /**
-	     * @type {String[]}
-	     */
-	    get symbol_alphabet(){
-	        if(is.array(this._settings.symbol_alphabet)){
-	            return lodash.clone(this._settings.symbol_alphabet);
-	        }
-	        return [];
-	    }
-	    
-	    /**
-	     * @type {number}
-	     */
-	    get word_length_min(){
-	        return this._settings.word_length_min;
-	    }
-	    get wordLengthMin(){ return this.word_length_min; }
-	    
-	    /**
-	     * @type {number}
-	     */
-	    get word_length_max(){
-	        return this._settings.word_length_max;
-	    }
-	    get wordLengthMax(){ return this.word_length_max; }
-	}
-
-	var remove$1 = removeDiacritics;
-
-	var replacementList = [
-	  {
-	    base: ' ',
-	    chars: "\u00A0",
-	  }, {
-	    base: '0',
-	    chars: "\u07C0",
-	  }, {
-	    base: 'A',
-	    chars: "\u24B6\uFF21\u00C0\u00C1\u00C2\u1EA6\u1EA4\u1EAA\u1EA8\u00C3\u0100\u0102\u1EB0\u1EAE\u1EB4\u1EB2\u0226\u01E0\u00C4\u01DE\u1EA2\u00C5\u01FA\u01CD\u0200\u0202\u1EA0\u1EAC\u1EB6\u1E00\u0104\u023A\u2C6F",
-	  }, {
-	    base: 'AA',
-	    chars: "\uA732",
-	  }, {
-	    base: 'AE',
-	    chars: "\u00C6\u01FC\u01E2",
-	  }, {
-	    base: 'AO',
-	    chars: "\uA734",
-	  }, {
-	    base: 'AU',
-	    chars: "\uA736",
-	  }, {
-	    base: 'AV',
-	    chars: "\uA738\uA73A",
-	  }, {
-	    base: 'AY',
-	    chars: "\uA73C",
-	  }, {
-	    base: 'B',
-	    chars: "\u24B7\uFF22\u1E02\u1E04\u1E06\u0243\u0181",
-	  }, {
-	    base: 'C',
-	    chars: "\u24b8\uff23\uA73E\u1E08\u0106\u0043\u0108\u010A\u010C\u00C7\u0187\u023B",
-	  }, {
-	    base: 'D',
-	    chars: "\u24B9\uFF24\u1E0A\u010E\u1E0C\u1E10\u1E12\u1E0E\u0110\u018A\u0189\u1D05\uA779",
-	  }, {
-	    base: 'Dh',
-	    chars: "\u00D0",
-	  }, {
-	    base: 'DZ',
-	    chars: "\u01F1\u01C4",
-	  }, {
-	    base: 'Dz',
-	    chars: "\u01F2\u01C5",
-	  }, {
-	    base: 'E',
-	    chars: "\u025B\u24BA\uFF25\u00C8\u00C9\u00CA\u1EC0\u1EBE\u1EC4\u1EC2\u1EBC\u0112\u1E14\u1E16\u0114\u0116\u00CB\u1EBA\u011A\u0204\u0206\u1EB8\u1EC6\u0228\u1E1C\u0118\u1E18\u1E1A\u0190\u018E\u1D07",
-	  }, {
-	    base: 'F',
-	    chars: "\uA77C\u24BB\uFF26\u1E1E\u0191\uA77B",
-	  }, {
-	    base: 'G',
-	    chars: "\u24BC\uFF27\u01F4\u011C\u1E20\u011E\u0120\u01E6\u0122\u01E4\u0193\uA7A0\uA77D\uA77E\u0262",
-	  }, {
-	    base: 'H',
-	    chars: "\u24BD\uFF28\u0124\u1E22\u1E26\u021E\u1E24\u1E28\u1E2A\u0126\u2C67\u2C75\uA78D",
-	  }, {
-	    base: 'I',
-	    chars: "\u24BE\uFF29\xCC\xCD\xCE\u0128\u012A\u012C\u0130\xCF\u1E2E\u1EC8\u01CF\u0208\u020A\u1ECA\u012E\u1E2C\u0197",
-	  }, {
-	    base: 'J',
-	    chars: "\u24BF\uFF2A\u0134\u0248\u0237",
-	  }, {
-	    base: 'K',
-	    chars: "\u24C0\uFF2B\u1E30\u01E8\u1E32\u0136\u1E34\u0198\u2C69\uA740\uA742\uA744\uA7A2",
-	  }, {
-	    base: 'L',
-	    chars: "\u24C1\uFF2C\u013F\u0139\u013D\u1E36\u1E38\u013B\u1E3C\u1E3A\u0141\u023D\u2C62\u2C60\uA748\uA746\uA780",
-	  }, {
-	    base: 'LJ',
-	    chars: "\u01C7",
-	  }, {
-	    base: 'Lj',
-	    chars: "\u01C8",
-	  }, {
-	    base: 'M',
-	    chars: "\u24C2\uFF2D\u1E3E\u1E40\u1E42\u2C6E\u019C\u03FB",
-	  }, {
-	    base: 'N',
-	    chars: "\uA7A4\u0220\u24C3\uFF2E\u01F8\u0143\xD1\u1E44\u0147\u1E46\u0145\u1E4A\u1E48\u019D\uA790\u1D0E",
-	  }, {
-	    base: 'NJ',
-	    chars: "\u01CA",
-	  }, {
-	    base: 'Nj',
-	    chars: "\u01CB",
-	  }, {
-	    base: 'O',
-	    chars: "\u24C4\uFF2F\xD2\xD3\xD4\u1ED2\u1ED0\u1ED6\u1ED4\xD5\u1E4C\u022C\u1E4E\u014C\u1E50\u1E52\u014E\u022E\u0230\xD6\u022A\u1ECE\u0150\u01D1\u020C\u020E\u01A0\u1EDC\u1EDA\u1EE0\u1EDE\u1EE2\u1ECC\u1ED8\u01EA\u01EC\xD8\u01FE\u0186\u019F\uA74A\uA74C",
-	  }, {
-	    base: 'OE',
-	    chars: "\u0152",
-	  }, {
-	    base: 'OI',
-	    chars: "\u01A2",
-	  }, {
-	    base: 'OO',
-	    chars: "\uA74E",
-	  }, {
-	    base: 'OU',
-	    chars: "\u0222",
-	  }, {
-	    base: 'P',
-	    chars: "\u24C5\uFF30\u1E54\u1E56\u01A4\u2C63\uA750\uA752\uA754",
-	  }, {
-	    base: 'Q',
-	    chars: "\u24C6\uFF31\uA756\uA758\u024A",
-	  }, {
-	    base: 'R',
-	    chars: "\u24C7\uFF32\u0154\u1E58\u0158\u0210\u0212\u1E5A\u1E5C\u0156\u1E5E\u024C\u2C64\uA75A\uA7A6\uA782",
-	  }, {
-	    base: 'S',
-	    chars: "\u24C8\uFF33\u1E9E\u015A\u1E64\u015C\u1E60\u0160\u1E66\u1E62\u1E68\u0218\u015E\u2C7E\uA7A8\uA784",
-	  }, {
-	    base: 'T',
-	    chars: "\u24C9\uFF34\u1E6A\u0164\u1E6C\u021A\u0162\u1E70\u1E6E\u0166\u01AC\u01AE\u023E\uA786",
-	  }, {
-	    base: 'Th',
-	    chars: "\u00DE",
-	  }, {
-	    base: 'TZ',
-	    chars: "\uA728",
-	  }, {
-	    base: 'U',
-	    chars: "\u24CA\uFF35\xD9\xDA\xDB\u0168\u1E78\u016A\u1E7A\u016C\xDC\u01DB\u01D7\u01D5\u01D9\u1EE6\u016E\u0170\u01D3\u0214\u0216\u01AF\u1EEA\u1EE8\u1EEE\u1EEC\u1EF0\u1EE4\u1E72\u0172\u1E76\u1E74\u0244",
-	  }, {
-	    base: 'V',
-	    chars: "\u24CB\uFF36\u1E7C\u1E7E\u01B2\uA75E\u0245",
-	  }, {
-	    base: 'VY',
-	    chars: "\uA760",
-	  }, {
-	    base: 'W',
-	    chars: "\u24CC\uFF37\u1E80\u1E82\u0174\u1E86\u1E84\u1E88\u2C72",
-	  }, {
-	    base: 'X',
-	    chars: "\u24CD\uFF38\u1E8A\u1E8C",
-	  }, {
-	    base: 'Y',
-	    chars: "\u24CE\uFF39\u1EF2\xDD\u0176\u1EF8\u0232\u1E8E\u0178\u1EF6\u1EF4\u01B3\u024E\u1EFE",
-	  }, {
-	    base: 'Z',
-	    chars: "\u24CF\uFF3A\u0179\u1E90\u017B\u017D\u1E92\u1E94\u01B5\u0224\u2C7F\u2C6B\uA762",
-	  }, {
-	    base: 'a',
-	    chars: "\u24D0\uFF41\u1E9A\u00E0\u00E1\u00E2\u1EA7\u1EA5\u1EAB\u1EA9\u00E3\u0101\u0103\u1EB1\u1EAF\u1EB5\u1EB3\u0227\u01E1\u00E4\u01DF\u1EA3\u00E5\u01FB\u01CE\u0201\u0203\u1EA1\u1EAD\u1EB7\u1E01\u0105\u2C65\u0250\u0251",
-	  }, {
-	    base: 'aa',
-	    chars: "\uA733",
-	  }, {
-	    base: 'ae',
-	    chars: "\u00E6\u01FD\u01E3",
-	  }, {
-	    base: 'ao',
-	    chars: "\uA735",
-	  }, {
-	    base: 'au',
-	    chars: "\uA737",
-	  }, {
-	    base: 'av',
-	    chars: "\uA739\uA73B",
-	  }, {
-	    base: 'ay',
-	    chars: "\uA73D",
-	  }, {
-	    base: 'b',
-	    chars: "\u24D1\uFF42\u1E03\u1E05\u1E07\u0180\u0183\u0253\u0182",
-	  }, {
-	    base: 'c',
-	    chars: "\uFF43\u24D2\u0107\u0109\u010B\u010D\u00E7\u1E09\u0188\u023C\uA73F\u2184",
-	  }, {
-	    base: 'd',
-	    chars: "\u24D3\uFF44\u1E0B\u010F\u1E0D\u1E11\u1E13\u1E0F\u0111\u018C\u0256\u0257\u018B\u13E7\u0501\uA7AA",
-	  }, {
-	    base: 'dh',
-	    chars: "\u00F0",
-	  }, {
-	    base: 'dz',
-	    chars: "\u01F3\u01C6",
-	  }, {
-	    base: 'e',
-	    chars: "\u24D4\uFF45\u00E8\u00E9\u00EA\u1EC1\u1EBF\u1EC5\u1EC3\u1EBD\u0113\u1E15\u1E17\u0115\u0117\u00EB\u1EBB\u011B\u0205\u0207\u1EB9\u1EC7\u0229\u1E1D\u0119\u1E19\u1E1B\u0247\u01DD",
-	  }, {
-	    base: 'f',
-	    chars: "\u24D5\uFF46\u1E1F\u0192",
-	  }, {
-	    base: 'ff',
-	    chars: "\uFB00",
-	  }, {
-	    base: 'fi',
-	    chars: "\uFB01",
-	  }, {
-	    base: 'fl',
-	    chars: "\uFB02",
-	  }, {
-	    base: 'ffi',
-	    chars: "\uFB03",
-	  }, {
-	    base: 'ffl',
-	    chars: "\uFB04",
-	  }, {
-	    base: 'g',
-	    chars: "\u24D6\uFF47\u01F5\u011D\u1E21\u011F\u0121\u01E7\u0123\u01E5\u0260\uA7A1\uA77F\u1D79",
-	  }, {
-	    base: 'h',
-	    chars: "\u24D7\uFF48\u0125\u1E23\u1E27\u021F\u1E25\u1E29\u1E2B\u1E96\u0127\u2C68\u2C76\u0265",
-	  }, {
-	    base: 'hv',
-	    chars: "\u0195",
-	  }, {
-	    base: 'i',
-	    chars: "\u24D8\uFF49\xEC\xED\xEE\u0129\u012B\u012D\xEF\u1E2F\u1EC9\u01D0\u0209\u020B\u1ECB\u012F\u1E2D\u0268\u0131",
-	  }, {
-	    base: 'j',
-	    chars: "\u24D9\uFF4A\u0135\u01F0\u0249",
-	  }, {
-	    base: 'k',
-	    chars: "\u24DA\uFF4B\u1E31\u01E9\u1E33\u0137\u1E35\u0199\u2C6A\uA741\uA743\uA745\uA7A3",
-	  }, {
-	    base: 'l',
-	    chars: "\u24DB\uFF4C\u0140\u013A\u013E\u1E37\u1E39\u013C\u1E3D\u1E3B\u017F\u0142\u019A\u026B\u2C61\uA749\uA781\uA747\u026D",
-	  }, {
-	    base: 'lj',
-	    chars: "\u01C9",
-	  }, {
-	    base: 'm',
-	    chars: "\u24DC\uFF4D\u1E3F\u1E41\u1E43\u0271\u026F",
-	  }, {
-	    base: 'n',
-	    chars: "\u24DD\uFF4E\u01F9\u0144\xF1\u1E45\u0148\u1E47\u0146\u1E4B\u1E49\u019E\u0272\u0149\uA791\uA7A5\u043B\u0509",
-	  }, {
-	    base: 'nj',
-	    chars: "\u01CC",
-	  }, {
-	    base: 'o',
-	    chars: "\u24DE\uFF4F\xF2\xF3\xF4\u1ED3\u1ED1\u1ED7\u1ED5\xF5\u1E4D\u022D\u1E4F\u014D\u1E51\u1E53\u014F\u022F\u0231\xF6\u022B\u1ECF\u0151\u01D2\u020D\u020F\u01A1\u1EDD\u1EDB\u1EE1\u1EDF\u1EE3\u1ECD\u1ED9\u01EB\u01ED\xF8\u01FF\uA74B\uA74D\u0275\u0254\u1D11",
-	  }, {
-	    base: 'oe',
-	    chars: "\u0153",
-	  }, {
-	    base: 'oi',
-	    chars: "\u01A3",
-	  }, {
-	    base: 'oo',
-	    chars: "\uA74F",
-	  }, {
-	    base: 'ou',
-	    chars: "\u0223",
-	  }, {
-	    base: 'p',
-	    chars: "\u24DF\uFF50\u1E55\u1E57\u01A5\u1D7D\uA751\uA753\uA755\u03C1",
-	  }, {
-	    base: 'q',
-	    chars: "\u24E0\uFF51\u024B\uA757\uA759",
-	  }, {
-	    base: 'r',
-	    chars: "\u24E1\uFF52\u0155\u1E59\u0159\u0211\u0213\u1E5B\u1E5D\u0157\u1E5F\u024D\u027D\uA75B\uA7A7\uA783",
-	  }, {
-	    base: 's',
-	    chars: "\u24E2\uFF53\u015B\u1E65\u015D\u1E61\u0161\u1E67\u1E63\u1E69\u0219\u015F\u023F\uA7A9\uA785\u1E9B\u0282",
-	  }, {
-	    base: 'ss',
-	    chars: "\xDF",
-	  }, {
-	    base: 't',
-	    chars: "\u24E3\uFF54\u1E6B\u1E97\u0165\u1E6D\u021B\u0163\u1E71\u1E6F\u0167\u01AD\u0288\u2C66\uA787",
-	  }, {
-	    base: 'th',
-	    chars: "\u00FE",
-	  }, {
-	    base: 'tz',
-	    chars: "\uA729",
-	  }, {
-	    base: 'u',
-	    chars: "\u24E4\uFF55\xF9\xFA\xFB\u0169\u1E79\u016B\u1E7B\u016D\xFC\u01DC\u01D8\u01D6\u01DA\u1EE7\u016F\u0171\u01D4\u0215\u0217\u01B0\u1EEB\u1EE9\u1EEF\u1EED\u1EF1\u1EE5\u1E73\u0173\u1E77\u1E75\u0289",
-	  }, {
-	    base: 'v',
-	    chars: "\u24E5\uFF56\u1E7D\u1E7F\u028B\uA75F\u028C",
-	  }, {
-	    base: 'vy',
-	    chars: "\uA761",
-	  }, {
-	    base: 'w',
-	    chars: "\u24E6\uFF57\u1E81\u1E83\u0175\u1E87\u1E85\u1E98\u1E89\u2C73",
-	  }, {
-	    base: 'x',
-	    chars: "\u24E7\uFF58\u1E8B\u1E8D",
-	  }, {
-	    base: 'y',
-	    chars: "\u24E8\uFF59\u1EF3\xFD\u0177\u1EF9\u0233\u1E8F\xFF\u1EF7\u1E99\u1EF5\u01B4\u024F\u1EFF",
-	  }, {
-	    base: 'z',
-	    chars: "\u24E9\uFF5A\u017A\u1E91\u017C\u017E\u1E93\u1E95\u01B6\u0225\u0240\u2C6C\uA763",
-	  }
-	];
-
-	var diacriticsMap = {};
-	for (var i = 0; i < replacementList.length; i += 1) {
-	  var chars = replacementList[i].chars;
-	  for (var j = 0; j < chars.length; j += 1) {
-	    diacriticsMap[chars[j]] = replacementList[i].base;
-	  }
-	}
-
-	function removeDiacritics(str) {
-	  return str.replace(/[^\u0000-\u007e]/g, function(c) {
-	    return diacriticsMap[c] || c;
-	  });
-	}
-
-	var replacementList_1 = replacementList;
-	var diacriticsMap_1 = diacriticsMap;
-
-	var diacritics = {
-		remove: remove$1,
-		replacementList: replacementList_1,
-		diacriticsMap: diacriticsMap_1
-	};
-
 	var interopRequireDefault = createCommonjsModule(function (module) {
 	function _interopRequireDefault(obj) {
 	  return obj && obj.__esModule ? obj : {
@@ -20131,8 +19363,8 @@
 	  'SVGPathSegList,SVGPointList,SVGStringList,SVGTransformList,SourceBufferList,StyleSheetList,TextTrackCueList,' +
 	  'TextTrackList,TouchList').split(',');
 
-	for (var i$1 = 0; i$1 < DOMIterables.length; i$1++) {
-	  var NAME = DOMIterables[i$1];
+	for (var i = 0; i < DOMIterables.length; i++) {
+	  var NAME = DOMIterables[i];
 	  var Collection = _global[NAME];
 	  var proto = Collection && Collection.prototype;
 	  if (proto && !proto[TO_STRING_TAG]) _hide(proto, TO_STRING_TAG, NAME);
@@ -25332,6 +24564,953 @@
 	});
 
 	var XRegExp = unwrapExports(lib);
+
+	/**
+	 * The default settings.
+	 *
+	 * @type {Object}
+	 */
+	const DEFAULT_SETTINGS = {
+	    allow_accents: false,
+	    case_transform: 'CAPITALISE',
+	    character_substitutions: {},
+	    num_words: 3,
+	    padding_character: 'RANDOM',
+	    padding_characters_before: 2,
+	    padding_characters_after: 2,
+	    padding_digits_before: 2,
+	    padding_digits_after: 2,
+	    padding_type: 'FIXED',
+	    separator_character: 'RANDOM',
+	    symbol_alphabet: ['!', '@', '$', '%', '^', '&', '*', '-', '_', '+', '=', ':', '|', '~', '?', '/', '.', ';'],
+	    word_length_min: 4,
+	    word_length_max: 8
+	};
+
+	/**
+	 * The limits for various config settings.
+	 *
+	 * @type {Object}
+	 */
+	const LIMITS = {
+	    num_words: {
+	        min: 3
+	    },
+	    pad_to_length: {
+	        min: 12
+	    },
+	    word_length: {
+	        min: 4
+	    }
+	};
+
+	/**
+	 * An HSXKPAsswd Config.
+	 */
+	class Config{
+	    /**
+	     * The default settings.
+	     *
+	     * @type {Object}
+	     */
+	    static get defaultSettings(){
+	        return lodash.cloneDeep(DEFAULT_SETTINGS);
+	    }
+	    
+	    /**
+	     * The limits that apply to various configuration settings.
+	     *
+	     * @type {Object}
+	     */
+	    static get limits(){
+	        return lodash.cloneDeep(LIMITS);
+	    }
+	    
+	    /**
+	     * Assert that a given value is a valid alphabet. I.e. if a given value is an array consisting of one or more single-character strings.
+	     *
+	     * A Type Error is thrown if the value is not valid.
+	     *
+	     * @param {*} val - The value to test
+	     * @return {boolean} Always returns `true`.
+	     * @throws {TypeError} A Type Error is thrown if the value is not a valid alphabet.
+	     */
+	    static assertAlphabet(val){
+	        if(is.not.array(val)) throw new TypeError('alphabet must be an array');
+	        if(val.length < 1) throw new TypeError('alphabet must contain at least one character');
+	        if(!is.all.string(val)) throw new TypeError('alphabet contains a value that is not a string');
+	        for(const i of val){
+	            if(i.length !== 1) throw new TypeError('alphabet contains a string that is not exactly one character long');
+	        }
+	        return true;
+	    }
+	    
+	    /**
+	     * Assert that a given object defines a valid case transformation configuration. Invalid values will result in a Type Error.
+	     *
+	     * The object must provide the key `case_transform` with one of the following valid values; `ALTERNATE`, `CAPITALISE`, `INVERT`, `LOWER`, `NONE`, `RANDOM`, or `UPPER`.
+	     *
+	     * @param {*} conf - The value to test.
+	     * @return {boolean} - Always returns `true`.
+	     * @throws {TypeError} A TypeError is thrown if the passed object does not define a valid case transformation configuration.
+	     */
+	    static assertCaseTransformation(conf){
+	        if(is.not.object(conf)) throw new TypeError('config must be an object');
+	        if(is.not.string(conf.case_transform)){
+	            throw new TypeError('case_transform must be a string');
+	        }
+	        if(!conf.case_transform.match(/^(ALTERNATE)|(CAPITALISE)|(INVERT)|(LOWER)|(NONE)|(RANDOM)|(UPPER)$/)){
+	            throw new TypeError('invalid case_transform');
+	        }
+	        return true;
+	    }
+	    
+	    /**
+	     * Assert that a given object defines a complete and valid config.
+	     *
+	     * @param {*} conf - The value to test.
+	     * @return {boolean} - Always returns `true`.
+	     * @throws {TypeError} A TypeError is thrown if the passed object does not define a complete configuration.
+	     */
+	    static assertCompleteConfig(conf){
+	        // make sure we have an object
+	        if(is.not.object(conf)) throw new TypeError('config must be an object');
+	        
+	        // assert each aspect of the config
+	        this.assertCaseTransformation(conf);
+	        this.assertPaddingCharacters(conf);
+	        this.assertPaddingDigits(conf);
+	        this.assertSeparator(conf);
+	        this.assertWords(conf);
+	        
+	        // if we got here, all is well
+	        return true;
+	    }
+	    
+	    /**
+	     * Assert that a given object defines a valid padding character configuration. Invalid values will result in a Type Error.
+	     *
+	     * The object must provide the key `padding_type`. The minimum valid configuation is `{ padding_type: 'NONE' }`.
+	     *
+	     * For all padding types other than `NONE` `padding_character` is also required.
+	     *
+	     * For `padding_type='FIXED'` both `padding_characters_before` & `padding_characters_after` are required.
+	     *
+	     * For `padding_type='ADAPTIVE'` `pad_to_length` is required.
+	     *
+	     * For `padding_character='RANDOM'` one of `padding_alphabet` or `symbol_alphabet` is required.
+	     *
+	     * @param {*} conf - The value to test.
+	     * @return {boolean} - Always returns `true`.
+	     * @throws {TypeError} A TypeError is thrown if the passed object does not define a valid padding configuration.
+	     */
+	    static assertPaddingCharacters(conf){
+	        // make sure we have an object that defines a padding type
+	        if(is.not.object(conf)) throw new TypeError('config must be an object');
+	        if(is.not.string(conf.padding_type)){
+	            throw new TypeError('padding_type must be a string');
+	        }
+	        
+	        // short-circuit no padding
+	        if(conf.padding_type === 'NONE') return true;
+	        
+	        // make sure we have the keys needed to determine the padding character to use
+	        if(is.not.string(conf.padding_character)) throw new TypeError('padding_character must be a string');
+	        if(conf.padding_character === 'RANDOM'){
+	            if(!(this.isAlphabet(conf.padding_alphabet) || this.isAlphabet(conf.symbol_alphabet))){
+	                throw new TypeError('padding_character is RANDOM but neither padding_alphabet nor symbol_alphabet are defined');
+	            }
+	        }else if(conf.padding_character === 'SEPARATOR');else{
+	            if(conf.padding_character.length !== 1) throw new TypeError('invalid padding_character');
+	        }
+	        
+	        // make sure we have the keys needed to determine what the amount of padding to apply
+	        if(conf.padding_type === 'FIXED'){
+	            if(is.not.integer(conf.padding_characters_before) || is.negative(conf.padding_characters_before)){
+	                throw new TypeError('padding_characters_before must be an integer greater than or equal to zero');
+	            }
+	            if(is.not.integer(conf.padding_characters_after) || is.negative(conf.padding_characters_after)){
+	                throw new TypeError('padding_characters_after must be an integer greater than or equal to zero');
+	            }
+	        }else if(conf.padding_type === 'ADAPTIVE'){
+	            if(is.not.integer(conf.pad_to_length) || is.under(conf.pad_to_length, LIMITS.pad_to_length.min)){
+	                throw new TypeError(`invalid pad_to_length, must be an integer greater than or equal to ${LIMITS.pad_to_length.min}`);
+	            }
+	        }else{
+	            throw new TypeError("invalid padding_type, must be one of 'NONE', 'FIXED', or 'ADAPTIVE'");
+	        }
+	        
+	        // if we got here all is well
+	        return true;
+	    }
+	    
+	    /**
+	     * Assert that a given object defines a valid padding digit configuration. Invalid values will result in a Type Error.
+	     *
+	     * The object must provide the keys `padding_digits_before` & `padding_digits_after`.
+	     *
+	     * @param {*} conf - The value to test.
+	     * @return {boolean} - Always returns `true`.
+	     * @throws {TypeError} A TypeError is thrown if the passed object does not define a valid padding configuration.
+	     */
+	    static assertPaddingDigits(conf){
+	        // make sure we have an object
+	        if(is.not.object(conf)) throw new TypeError('config must be an object');
+	        
+	        // make sure we have valid values for both required keys
+	        if(is.not.integer(conf.padding_digits_before) || is.negative(conf.padding_digits_before)){
+	            throw new TypeError('padding_digits_before must be an integer greater than or equal to zero');
+	        }
+	        if(is.not.integer(conf.padding_digits_after) || is.negative(conf.padding_digits_after)){
+	            throw new TypeError('padding_digits_after must be an integer greater than or equal to zero');
+	        }
+	        
+	        // if we got here all is well
+	        return true;
+	    }
+	    
+	    /**
+	     * Assert that a given object defines a valid padding configuration. Invalid values will result in a Type Error.
+	     *
+	     * The object must provide the key `separator_character`.
+	     *
+	     * For `separator_character='RANDOM'` one of `separator_alphabet` or `symbol_alphabet` is required.
+	     *
+	     * @param {*} conf - The value to test.
+	     * @return {boolean} - Always returns `true`.
+	     * @throws {TypeError} A TypeError is thrown if the passed object does not define a valid padding configuration.
+	     */
+	    static assertSeparator(conf){
+	        // make sure we have an object that defines a padding type
+	        if(is.not.object(conf)) throw new TypeError('config must be an object');
+	        if(is.not.string(conf.separator_character)){
+	            throw new TypeError('separator_character must be a string');
+	        }
+	        
+	        // deal with each possible separator character
+	        if(conf.separator_character === 'NONE'){
+	            return true;
+	        }else if(conf.separator_character === 'RANDOM'){
+	            if(this.isAlphabet(conf.separator_alphabet) || this.isAlphabet(conf.symbol_alphabet)){
+	                return true;
+	            }else{
+	                throw new TypeError('separator_character is RANDOM, but neither separator_alphabet nor symbol_alphabet are defined');
+	            }
+	        }else if(conf.separator_character.length === 1){
+	            return true;
+	        }
+	        
+	        // if we got here the separator character is not valid!
+	        throw new TypeError("invalid separator_character, must be a single character or one of 'NONE' or 'RANDOM'");
+	    }
+	    
+	    /**
+	     * Assert that a given object defines valid word constraints. Invalid values will result in a Type Error.
+	     *
+	     * The object must provide the keys `word_length_min` & `word_length_max`.
+	     *
+	     * The object can also optionally provide the following keys:
+	     * * `allow_accents - if present it must be a primitive value.
+	     * * `character_substitutions` - if present must be an object mapping single letters to non-empty strings.
+	     *
+	     * @param {*} conf - The value to test.
+	     * @return {boolean} - Always returns `true`.
+	     * @throws {TypeError} A TypeError is thrown if the passed object does not define valid word constraints.
+	     */
+	    static assertWordConstraints(conf){
+	        // make sure we have an object
+	        if(is.not.object(conf)) throw new TypeError('config must be an object');
+	        
+	        // make sure we have valid length constraints
+	        if(is.not.integer(conf.word_length_min) || is.under(conf.word_length_min, LIMITS.word_length.min)){
+	            throw new TypeError(`word_length_min must be an integer greater than or equal to ${LIMITS.num_words.min}`);
+	        }
+	        if(is.not.integer(conf.word_length_max) || is.under(conf.word_length_max, LIMITS.word_length.min)){
+	            throw new TypeError(`word_length_max must be an integer greater than or equal to ${LIMITS.num_words.min}`);
+	        }
+	        if(conf.word_length_min > conf.word_length_max){
+	            throw new TypeError('word_length_min must be less than or equal to word_length_max');
+	        }
+	        
+	        // if present, make sure allow_accents is valid
+	        if(is.not.undefined(conf.allow_accents)){
+	            if(!(is.boolean(conf.allow_accents) || is.string(conf.allow_accents) || is.number(conf.allow_accents))){
+	                throw new TypeError('if present, allow_accents must be a primitive value, ideally a boolean');
+	            }
+	        }
+	        
+	        // if present, make sure character_substitutions is valid
+	        if(is.not.undefined(conf.character_substitutions)){
+	            if(is.not.object(conf.character_substitutions)){
+	                throw new TypeError('if present, character_substitutions must be an object');
+	            }
+	            for(const c of Object.keys(conf.character_substitutions)){
+	                if(is.not.string(c) || !XRegExp.match(c, XRegExp('^\\p{Letter}$'))) throw new TypeError('character_substitutions keys must be single-letter strings');
+	                const sub = conf.character_substitutions[c];
+	                if(is.not.string(sub) || is.empty(sub)) throw new TypeError('character_substitutions values must be non-empty strings');
+	            }
+	        }
+	        
+	        // if we got here, all is well
+	        return true;
+	    }
+	    
+	    /**
+	     * Assert that a given object defines the number of words to include in a password as well as valid word constraints. Invalid values will result in a Type Error.
+	     *
+	     * The object must provide the keys `num_words`, `word_length_min` & `word_length_max`.
+	     *
+	     * The object can also optionally provide the following keys:
+	     * * `allow_accents - if present it must be a primitive value.
+	     * * `character_substitutions` - if present must be an object mapping single letters to non-empty strings.
+	     *
+	     * @param {*} conf - The value to test.
+	     * @return {boolean} - Always returns `true`.
+	     * @throws {TypeError} A TypeError is thrown if the passed object does not define valid word constraints.
+	     */
+	    static assertWords(conf){
+	        // make sure we have all the word constraints
+	        this.assertWordConstraints(conf);
+	        
+	        // make sure we have a valid number of words
+	        if(is.not.integer(conf.num_words) || is.under(conf.num_words, LIMITS.num_words.min)){
+	            throw new TypeError(`num_words must be an integer greater than or equal to ${LIMITS.num_words.min}`);
+	        }
+	        
+	        // if we got here, all is well
+	        return true;
+	    }
+	    
+	    /**
+	     * Test if a given value is an object that defines the config keys needed to specify case transformations.
+	     *
+	     * @param {*} val - The value to test.
+	     * @return {boolean}
+	     */
+	    static definesCaseTransformation(val){
+	        try{
+	            this.assertCaseTransformation(val);
+	        }catch(err){
+	            return false;
+	        }
+	        return true;
+	    }
+	    
+	    /**
+	     * Test if a given value is an object that defines a compelte and valid config.
+	     *
+	     * @param {*} val - The value to test.
+	     * @return {boolean}
+	     */
+	    static definesCompleteConfig(val){
+	        try{
+	            this.assertCompleteConfig(val);
+	        }catch(err){
+	            return false;
+	        }
+	        return true;
+	    }
+	    
+	    /**
+	     * Test if a given value is an object that defines the config keys needed to specify password character padding.
+	     *
+	     * @param {*} val - The value to test.
+	     * @return {boolean}
+	     */
+	    static definesPaddingCharacters(val){
+	        try{
+	            this.assertPaddingCharacters(val);
+	        }catch(err){
+	            return false;
+	        }
+	        return true;
+	    }
+	    
+	    /**
+	     * Test if a given value is an object that defines the config keys needed to specify password digit padding.
+	     *
+	     * @param {*} val - The value to test.
+	     * @return {boolean}
+	     */
+	    static definesPaddingDigits(val){
+	        try{
+	            this.assertPaddingDigits(val);
+	        }catch(err){
+	            return false;
+	        }
+	        return true;
+	    }
+	    
+	    /**
+	     * Test if a given value is an object that defines the config keys needed to specify a separatpor.
+	     *
+	     * @param {*} val - The value to test.
+	     * @return {boolean}
+	     */
+	    static definesSeparator(val){
+	        try{
+	            this.assertSeparator(val);
+	        }catch(err){
+	            return false;
+	        }
+	        return true;
+	    }
+	    
+	    /**
+	     * Test if a given value is an object that defines the config keys needed to specify a word constraints.
+	     *
+	     * @param {*} val - The value to test.
+	     * @return {boolean}
+	     */
+	    static definesWordConstraints(val){
+	        try{
+	            this.assertWordConstraints(val);
+	        }catch(err){
+	            return false;
+	        }
+	        return true;
+	    }
+	    
+	    /**
+	     * Test if a given value is an object that defines the config keys needed to specify the number of words and word constraints.
+	     *
+	     * @param {*} val - The value to test.
+	     * @return {boolean}
+	     */
+	    static definesWords(val){
+	        try{
+	            this.assertWords(val);
+	        }catch(err){
+	            return false;
+	        }
+	        return true;
+	    }
+	    
+	    /**
+	     * Test if a given value is a valid alphabet. I.e. if a given value is an array consisting of one or more single-character strings.
+	     *
+	     * @param {*} val - The value to test
+	     * @return {boolean}
+	     */
+	    static isAlphabet(val){
+	        try{
+	            this.assertAlphabet(val);
+	        }catch(err){
+	            return false;
+	        }
+	        return true;
+	    }
+	    
+	    /**
+	     * @param {Object} [settings] - The config settings. If no object is passed the default settings are used.
+	     * @throws {TypeError} - A type error is thrown if invalid args are passed.
+	     * @todo Validate settings
+	     */
+	    constructor(settings){
+	        if(is.undefined(settings)){
+	            this._settings = lodash.cloneDeep(DEFAULT_SETTINGS);
+	        }else if(this.constructor.definesCompleteConfig(settings)){
+	            this._settings = lodash.cloneDeep(settings);
+	        }else{
+	            throw new TypeError('settings must be a plain object defining a complete and valid configuration');
+	        }
+	    }
+	    
+	    /**
+	     * @type {Object}
+	     */
+	    get all(){
+	        return {
+	            allow_accents: this.allow_accents,
+	            case_transform: this.case_transform,
+	            character_substitutions: this.character_substitutions,
+	            num_words: this.num_words,
+	            pad_to_length: this.pad_to_length,
+	            padding_alphabet: this.padding_alphabet,
+	            padding_character: this.padding_character,
+	            padding_characters_before: this.padding_characters_before,
+	            padding_characters_after: this.padding_characters_after,
+	            padding_digits_before: this.padding_digits_before,
+	            padding_digits_after: this.padding_digits_after,
+	            padding_type: this.padding_type,
+	            separator_alphabet: this.separator_alphabet,
+	            separator_character: this.separator_character,
+	            symbol_alphabet: this.symbol_alphabet,
+	            word_length_min: this.word_length_min,
+	            word_length_max: this.word_length_max
+	        };
+	    }
+	    
+	    /**
+	     * @type {boolean}
+	     */
+	    get allow_accents(){
+	        return this._settings.allow_accents ? true : false;
+	    }
+	    get allowAccents(){ return this.allow_accents; }
+	    
+	    /**
+	     * @type {string}
+	     */
+	    get case_transform(){
+	        return this._settings.case_transform;
+	    }
+	    get caseTransform(){ return this.case_transform; }
+	    
+	    /**
+	     * @type {Object}
+	     */
+	    get character_substitutions(){
+	        if(is.object(this._settings.character_substitutions)){
+	            return lodash.cloneDeep(this._settings.character_substitutions);
+	        }
+	        return {};
+	    }
+	    get characterSubstitutions(){ return this.character_substitutions; }
+	    
+	    /**
+	     * @type {number}
+	     */
+	    get num_words(){
+	        return this._settings.num_words;
+	    }
+	    get numWords(){ return this._settings.num_words; }
+	    
+	    /**
+	     * @type {number}
+	     */
+	    get pad_to_length(){
+	        return this._settings.pad_to_length || 12;
+	    }
+	    get padToLength(){ return this.pad_to_length; }
+	    
+	    /**
+	     * @type {String[]}
+	     */
+	    get padding_alphabet(){
+	        if(is.array(this._settings.padding_alphabet)){
+	            return lodash.clone(this._settings.padding_alphabet);
+	        }
+	        return [];
+	    }
+	    get paddingAlphabet(){ return this.padding_alphabet; }
+	    
+	    /**
+	     * @type {String}
+	     */
+	    get padding_character(){
+	        return this._settings.padding_character || '';
+	    }
+	    get paddingCharacter(){ return this.padding_character; }
+	    
+	    /**
+	     * @type {number}
+	     */
+	    get padding_characters_before(){
+	        return this._settings.padding_characters_before || 0;
+	    }
+	    get paddingCharactersBefore(){ return this.padding_characters_before; }
+	    
+	    /**
+	     * @type {number}
+	     */
+	    get padding_characters_after(){
+	        return this._settings.padding_characters_after || 0;
+	    }
+	    get paddingCharactersAfter(){ return this.padding_characters_after; }
+	    
+	    /**
+	     * @type {number}
+	     */
+	    get padding_digits_before(){
+	        return this._settings.padding_digits_before || 0;
+	    }
+	    get paddingDigitsBefore(){ return this.padding_digits_before; };
+	    
+	    /**
+	     * @type {number}
+	     */
+	    get padding_digits_after(){
+	        return this._settings.padding_digits_after || 0;
+	    }
+	    get paddingDigitsAfter(){ return this.padding_digits_after; }
+	    
+	    /**
+	     * @type {String}
+	     */
+	    get padding_type(){
+	        return this._settings.padding_type;
+	    }
+	    get paddingType(){ return this.padding_type; }
+	    
+	    /**
+	     * @type {String[]}
+	     */
+	    get separator_alphabet(){
+	        if(is.array(this._settings.separator_alphabet)){
+	            return lodash.clone(this._settings.separator_alphabet);
+	        }
+	        return [];
+	    }
+	    get separatorAlphabet(){ return this.separator_alphabet; }
+	    
+	    /**
+	     * @type {String}
+	     */
+	    get separator_character(){
+	        return this._settings.separator_character;
+	    }
+	    get separatorCharacter(){ return this.separator_character; }
+	    
+	    /**
+	     * @type {String[]}
+	     */
+	    get symbol_alphabet(){
+	        if(is.array(this._settings.symbol_alphabet)){
+	            return lodash.clone(this._settings.symbol_alphabet);
+	        }
+	        return [];
+	    }
+	    
+	    /**
+	     * @type {number}
+	     */
+	    get word_length_min(){
+	        return this._settings.word_length_min;
+	    }
+	    get wordLengthMin(){ return this.word_length_min; }
+	    
+	    /**
+	     * @type {number}
+	     */
+	    get word_length_max(){
+	        return this._settings.word_length_max;
+	    }
+	    get wordLengthMax(){ return this.word_length_max; }
+	}
+
+	var remove$1 = removeDiacritics;
+
+	var replacementList = [
+	  {
+	    base: ' ',
+	    chars: "\u00A0",
+	  }, {
+	    base: '0',
+	    chars: "\u07C0",
+	  }, {
+	    base: 'A',
+	    chars: "\u24B6\uFF21\u00C0\u00C1\u00C2\u1EA6\u1EA4\u1EAA\u1EA8\u00C3\u0100\u0102\u1EB0\u1EAE\u1EB4\u1EB2\u0226\u01E0\u00C4\u01DE\u1EA2\u00C5\u01FA\u01CD\u0200\u0202\u1EA0\u1EAC\u1EB6\u1E00\u0104\u023A\u2C6F",
+	  }, {
+	    base: 'AA',
+	    chars: "\uA732",
+	  }, {
+	    base: 'AE',
+	    chars: "\u00C6\u01FC\u01E2",
+	  }, {
+	    base: 'AO',
+	    chars: "\uA734",
+	  }, {
+	    base: 'AU',
+	    chars: "\uA736",
+	  }, {
+	    base: 'AV',
+	    chars: "\uA738\uA73A",
+	  }, {
+	    base: 'AY',
+	    chars: "\uA73C",
+	  }, {
+	    base: 'B',
+	    chars: "\u24B7\uFF22\u1E02\u1E04\u1E06\u0243\u0181",
+	  }, {
+	    base: 'C',
+	    chars: "\u24b8\uff23\uA73E\u1E08\u0106\u0043\u0108\u010A\u010C\u00C7\u0187\u023B",
+	  }, {
+	    base: 'D',
+	    chars: "\u24B9\uFF24\u1E0A\u010E\u1E0C\u1E10\u1E12\u1E0E\u0110\u018A\u0189\u1D05\uA779",
+	  }, {
+	    base: 'Dh',
+	    chars: "\u00D0",
+	  }, {
+	    base: 'DZ',
+	    chars: "\u01F1\u01C4",
+	  }, {
+	    base: 'Dz',
+	    chars: "\u01F2\u01C5",
+	  }, {
+	    base: 'E',
+	    chars: "\u025B\u24BA\uFF25\u00C8\u00C9\u00CA\u1EC0\u1EBE\u1EC4\u1EC2\u1EBC\u0112\u1E14\u1E16\u0114\u0116\u00CB\u1EBA\u011A\u0204\u0206\u1EB8\u1EC6\u0228\u1E1C\u0118\u1E18\u1E1A\u0190\u018E\u1D07",
+	  }, {
+	    base: 'F',
+	    chars: "\uA77C\u24BB\uFF26\u1E1E\u0191\uA77B",
+	  }, {
+	    base: 'G',
+	    chars: "\u24BC\uFF27\u01F4\u011C\u1E20\u011E\u0120\u01E6\u0122\u01E4\u0193\uA7A0\uA77D\uA77E\u0262",
+	  }, {
+	    base: 'H',
+	    chars: "\u24BD\uFF28\u0124\u1E22\u1E26\u021E\u1E24\u1E28\u1E2A\u0126\u2C67\u2C75\uA78D",
+	  }, {
+	    base: 'I',
+	    chars: "\u24BE\uFF29\xCC\xCD\xCE\u0128\u012A\u012C\u0130\xCF\u1E2E\u1EC8\u01CF\u0208\u020A\u1ECA\u012E\u1E2C\u0197",
+	  }, {
+	    base: 'J',
+	    chars: "\u24BF\uFF2A\u0134\u0248\u0237",
+	  }, {
+	    base: 'K',
+	    chars: "\u24C0\uFF2B\u1E30\u01E8\u1E32\u0136\u1E34\u0198\u2C69\uA740\uA742\uA744\uA7A2",
+	  }, {
+	    base: 'L',
+	    chars: "\u24C1\uFF2C\u013F\u0139\u013D\u1E36\u1E38\u013B\u1E3C\u1E3A\u0141\u023D\u2C62\u2C60\uA748\uA746\uA780",
+	  }, {
+	    base: 'LJ',
+	    chars: "\u01C7",
+	  }, {
+	    base: 'Lj',
+	    chars: "\u01C8",
+	  }, {
+	    base: 'M',
+	    chars: "\u24C2\uFF2D\u1E3E\u1E40\u1E42\u2C6E\u019C\u03FB",
+	  }, {
+	    base: 'N',
+	    chars: "\uA7A4\u0220\u24C3\uFF2E\u01F8\u0143\xD1\u1E44\u0147\u1E46\u0145\u1E4A\u1E48\u019D\uA790\u1D0E",
+	  }, {
+	    base: 'NJ',
+	    chars: "\u01CA",
+	  }, {
+	    base: 'Nj',
+	    chars: "\u01CB",
+	  }, {
+	    base: 'O',
+	    chars: "\u24C4\uFF2F\xD2\xD3\xD4\u1ED2\u1ED0\u1ED6\u1ED4\xD5\u1E4C\u022C\u1E4E\u014C\u1E50\u1E52\u014E\u022E\u0230\xD6\u022A\u1ECE\u0150\u01D1\u020C\u020E\u01A0\u1EDC\u1EDA\u1EE0\u1EDE\u1EE2\u1ECC\u1ED8\u01EA\u01EC\xD8\u01FE\u0186\u019F\uA74A\uA74C",
+	  }, {
+	    base: 'OE',
+	    chars: "\u0152",
+	  }, {
+	    base: 'OI',
+	    chars: "\u01A2",
+	  }, {
+	    base: 'OO',
+	    chars: "\uA74E",
+	  }, {
+	    base: 'OU',
+	    chars: "\u0222",
+	  }, {
+	    base: 'P',
+	    chars: "\u24C5\uFF30\u1E54\u1E56\u01A4\u2C63\uA750\uA752\uA754",
+	  }, {
+	    base: 'Q',
+	    chars: "\u24C6\uFF31\uA756\uA758\u024A",
+	  }, {
+	    base: 'R',
+	    chars: "\u24C7\uFF32\u0154\u1E58\u0158\u0210\u0212\u1E5A\u1E5C\u0156\u1E5E\u024C\u2C64\uA75A\uA7A6\uA782",
+	  }, {
+	    base: 'S',
+	    chars: "\u24C8\uFF33\u1E9E\u015A\u1E64\u015C\u1E60\u0160\u1E66\u1E62\u1E68\u0218\u015E\u2C7E\uA7A8\uA784",
+	  }, {
+	    base: 'T',
+	    chars: "\u24C9\uFF34\u1E6A\u0164\u1E6C\u021A\u0162\u1E70\u1E6E\u0166\u01AC\u01AE\u023E\uA786",
+	  }, {
+	    base: 'Th',
+	    chars: "\u00DE",
+	  }, {
+	    base: 'TZ',
+	    chars: "\uA728",
+	  }, {
+	    base: 'U',
+	    chars: "\u24CA\uFF35\xD9\xDA\xDB\u0168\u1E78\u016A\u1E7A\u016C\xDC\u01DB\u01D7\u01D5\u01D9\u1EE6\u016E\u0170\u01D3\u0214\u0216\u01AF\u1EEA\u1EE8\u1EEE\u1EEC\u1EF0\u1EE4\u1E72\u0172\u1E76\u1E74\u0244",
+	  }, {
+	    base: 'V',
+	    chars: "\u24CB\uFF36\u1E7C\u1E7E\u01B2\uA75E\u0245",
+	  }, {
+	    base: 'VY',
+	    chars: "\uA760",
+	  }, {
+	    base: 'W',
+	    chars: "\u24CC\uFF37\u1E80\u1E82\u0174\u1E86\u1E84\u1E88\u2C72",
+	  }, {
+	    base: 'X',
+	    chars: "\u24CD\uFF38\u1E8A\u1E8C",
+	  }, {
+	    base: 'Y',
+	    chars: "\u24CE\uFF39\u1EF2\xDD\u0176\u1EF8\u0232\u1E8E\u0178\u1EF6\u1EF4\u01B3\u024E\u1EFE",
+	  }, {
+	    base: 'Z',
+	    chars: "\u24CF\uFF3A\u0179\u1E90\u017B\u017D\u1E92\u1E94\u01B5\u0224\u2C7F\u2C6B\uA762",
+	  }, {
+	    base: 'a',
+	    chars: "\u24D0\uFF41\u1E9A\u00E0\u00E1\u00E2\u1EA7\u1EA5\u1EAB\u1EA9\u00E3\u0101\u0103\u1EB1\u1EAF\u1EB5\u1EB3\u0227\u01E1\u00E4\u01DF\u1EA3\u00E5\u01FB\u01CE\u0201\u0203\u1EA1\u1EAD\u1EB7\u1E01\u0105\u2C65\u0250\u0251",
+	  }, {
+	    base: 'aa',
+	    chars: "\uA733",
+	  }, {
+	    base: 'ae',
+	    chars: "\u00E6\u01FD\u01E3",
+	  }, {
+	    base: 'ao',
+	    chars: "\uA735",
+	  }, {
+	    base: 'au',
+	    chars: "\uA737",
+	  }, {
+	    base: 'av',
+	    chars: "\uA739\uA73B",
+	  }, {
+	    base: 'ay',
+	    chars: "\uA73D",
+	  }, {
+	    base: 'b',
+	    chars: "\u24D1\uFF42\u1E03\u1E05\u1E07\u0180\u0183\u0253\u0182",
+	  }, {
+	    base: 'c',
+	    chars: "\uFF43\u24D2\u0107\u0109\u010B\u010D\u00E7\u1E09\u0188\u023C\uA73F\u2184",
+	  }, {
+	    base: 'd',
+	    chars: "\u24D3\uFF44\u1E0B\u010F\u1E0D\u1E11\u1E13\u1E0F\u0111\u018C\u0256\u0257\u018B\u13E7\u0501\uA7AA",
+	  }, {
+	    base: 'dh',
+	    chars: "\u00F0",
+	  }, {
+	    base: 'dz',
+	    chars: "\u01F3\u01C6",
+	  }, {
+	    base: 'e',
+	    chars: "\u24D4\uFF45\u00E8\u00E9\u00EA\u1EC1\u1EBF\u1EC5\u1EC3\u1EBD\u0113\u1E15\u1E17\u0115\u0117\u00EB\u1EBB\u011B\u0205\u0207\u1EB9\u1EC7\u0229\u1E1D\u0119\u1E19\u1E1B\u0247\u01DD",
+	  }, {
+	    base: 'f',
+	    chars: "\u24D5\uFF46\u1E1F\u0192",
+	  }, {
+	    base: 'ff',
+	    chars: "\uFB00",
+	  }, {
+	    base: 'fi',
+	    chars: "\uFB01",
+	  }, {
+	    base: 'fl',
+	    chars: "\uFB02",
+	  }, {
+	    base: 'ffi',
+	    chars: "\uFB03",
+	  }, {
+	    base: 'ffl',
+	    chars: "\uFB04",
+	  }, {
+	    base: 'g',
+	    chars: "\u24D6\uFF47\u01F5\u011D\u1E21\u011F\u0121\u01E7\u0123\u01E5\u0260\uA7A1\uA77F\u1D79",
+	  }, {
+	    base: 'h',
+	    chars: "\u24D7\uFF48\u0125\u1E23\u1E27\u021F\u1E25\u1E29\u1E2B\u1E96\u0127\u2C68\u2C76\u0265",
+	  }, {
+	    base: 'hv',
+	    chars: "\u0195",
+	  }, {
+	    base: 'i',
+	    chars: "\u24D8\uFF49\xEC\xED\xEE\u0129\u012B\u012D\xEF\u1E2F\u1EC9\u01D0\u0209\u020B\u1ECB\u012F\u1E2D\u0268\u0131",
+	  }, {
+	    base: 'j',
+	    chars: "\u24D9\uFF4A\u0135\u01F0\u0249",
+	  }, {
+	    base: 'k',
+	    chars: "\u24DA\uFF4B\u1E31\u01E9\u1E33\u0137\u1E35\u0199\u2C6A\uA741\uA743\uA745\uA7A3",
+	  }, {
+	    base: 'l',
+	    chars: "\u24DB\uFF4C\u0140\u013A\u013E\u1E37\u1E39\u013C\u1E3D\u1E3B\u017F\u0142\u019A\u026B\u2C61\uA749\uA781\uA747\u026D",
+	  }, {
+	    base: 'lj',
+	    chars: "\u01C9",
+	  }, {
+	    base: 'm',
+	    chars: "\u24DC\uFF4D\u1E3F\u1E41\u1E43\u0271\u026F",
+	  }, {
+	    base: 'n',
+	    chars: "\u24DD\uFF4E\u01F9\u0144\xF1\u1E45\u0148\u1E47\u0146\u1E4B\u1E49\u019E\u0272\u0149\uA791\uA7A5\u043B\u0509",
+	  }, {
+	    base: 'nj',
+	    chars: "\u01CC",
+	  }, {
+	    base: 'o',
+	    chars: "\u24DE\uFF4F\xF2\xF3\xF4\u1ED3\u1ED1\u1ED7\u1ED5\xF5\u1E4D\u022D\u1E4F\u014D\u1E51\u1E53\u014F\u022F\u0231\xF6\u022B\u1ECF\u0151\u01D2\u020D\u020F\u01A1\u1EDD\u1EDB\u1EE1\u1EDF\u1EE3\u1ECD\u1ED9\u01EB\u01ED\xF8\u01FF\uA74B\uA74D\u0275\u0254\u1D11",
+	  }, {
+	    base: 'oe',
+	    chars: "\u0153",
+	  }, {
+	    base: 'oi',
+	    chars: "\u01A3",
+	  }, {
+	    base: 'oo',
+	    chars: "\uA74F",
+	  }, {
+	    base: 'ou',
+	    chars: "\u0223",
+	  }, {
+	    base: 'p',
+	    chars: "\u24DF\uFF50\u1E55\u1E57\u01A5\u1D7D\uA751\uA753\uA755\u03C1",
+	  }, {
+	    base: 'q',
+	    chars: "\u24E0\uFF51\u024B\uA757\uA759",
+	  }, {
+	    base: 'r',
+	    chars: "\u24E1\uFF52\u0155\u1E59\u0159\u0211\u0213\u1E5B\u1E5D\u0157\u1E5F\u024D\u027D\uA75B\uA7A7\uA783",
+	  }, {
+	    base: 's',
+	    chars: "\u24E2\uFF53\u015B\u1E65\u015D\u1E61\u0161\u1E67\u1E63\u1E69\u0219\u015F\u023F\uA7A9\uA785\u1E9B\u0282",
+	  }, {
+	    base: 'ss',
+	    chars: "\xDF",
+	  }, {
+	    base: 't',
+	    chars: "\u24E3\uFF54\u1E6B\u1E97\u0165\u1E6D\u021B\u0163\u1E71\u1E6F\u0167\u01AD\u0288\u2C66\uA787",
+	  }, {
+	    base: 'th',
+	    chars: "\u00FE",
+	  }, {
+	    base: 'tz',
+	    chars: "\uA729",
+	  }, {
+	    base: 'u',
+	    chars: "\u24E4\uFF55\xF9\xFA\xFB\u0169\u1E79\u016B\u1E7B\u016D\xFC\u01DC\u01D8\u01D6\u01DA\u1EE7\u016F\u0171\u01D4\u0215\u0217\u01B0\u1EEB\u1EE9\u1EEF\u1EED\u1EF1\u1EE5\u1E73\u0173\u1E77\u1E75\u0289",
+	  }, {
+	    base: 'v',
+	    chars: "\u24E5\uFF56\u1E7D\u1E7F\u028B\uA75F\u028C",
+	  }, {
+	    base: 'vy',
+	    chars: "\uA761",
+	  }, {
+	    base: 'w',
+	    chars: "\u24E6\uFF57\u1E81\u1E83\u0175\u1E87\u1E85\u1E98\u1E89\u2C73",
+	  }, {
+	    base: 'x',
+	    chars: "\u24E7\uFF58\u1E8B\u1E8D",
+	  }, {
+	    base: 'y',
+	    chars: "\u24E8\uFF59\u1EF3\xFD\u0177\u1EF9\u0233\u1E8F\xFF\u1EF7\u1E99\u1EF5\u01B4\u024F\u1EFF",
+	  }, {
+	    base: 'z',
+	    chars: "\u24E9\uFF5A\u017A\u1E91\u017C\u017E\u1E93\u1E95\u01B6\u0225\u0240\u2C6C\uA763",
+	  }
+	];
+
+	var diacriticsMap = {};
+	for (var i$1 = 0; i$1 < replacementList.length; i$1 += 1) {
+	  var chars = replacementList[i$1].chars;
+	  for (var j = 0; j < chars.length; j += 1) {
+	    diacriticsMap[chars[j]] = replacementList[i$1].base;
+	  }
+	}
+
+	function removeDiacritics(str) {
+	  return str.replace(/[^\u0000-\u007e]/g, function(c) {
+	    return diacriticsMap[c] || c;
+	  });
+	}
+
+	var replacementList_1 = replacementList;
+	var diacriticsMap_1 = diacriticsMap;
+
+	var diacritics = {
+		remove: remove$1,
+		replacementList: replacementList_1,
+		diacriticsMap: diacriticsMap_1
+	};
 
 	//
 	// Sample word list for use with the HSXKPasswd JavaScript Module compiled by Bart Busschots.
@@ -34452,7 +34631,7 @@
 	    /**
 	     * Get the words for a given set of constraints.
 	     *
-	     * @param {Object} constraints - An object specifting the constraints. Usually an HSXKPasswd Config object.
+	     * @param {(Config|Object)} constraints - An object specifting the constraints. Usually an HSXKPasswd Config object.
 	     * @param {number} constraints.word_length_min - the minimum length of words to include.
 	     * @param {number} constraints.word_length_max - the maximum length of words to include.
 	     * @param {boolean} [constraints.allow_accents=false] - whether or not accents should be stripped from accented characters. Defaults to false.
@@ -34466,23 +34645,8 @@
 	        if(!this.ready) throw new Error('Dictionary not ready');
 	        
 	        // validate constraints
-	        if(is.not.object(constraints)) throw new TypeError('constraints are required and must be passed as an object');
-	        if(!(is.integer(constraints.word_length_min) && constraints.word_length_min >= Dictionary.MIN_WORD_LENGTH)){
-	            throw new TypeError(`constraints.word_length_min must be an integer greater than or equal to ${Dictionary.MIN_WORD_LENGTH} and less than or equal to word_length_max`);
-	        }
-	        if(!(is.integer(constraints.word_length_max) && constraints.word_length_max >= Dictionary.MIN_WORD_LENGTH)){
-	            throw new TypeError(`constraints.word_length_max must be an integer greater than or equal to ${Dictionary.MIN_WORD_LENGTH} and greater than or equal to word_length_min`);
-	        }
-	        if(constraints.word_length_min > constraints.word_length_max){
-	            throw new TypeError('constraints.word_length_min must be less than or equal to constraints.word_length_max');
-	        }
-	        if(is.not.undefined(constraints.character_substitutions)){
-	            const subsErrMsg = 'if present, constraints.character_substitutions must be an object mapping single characters to strings';
-	            if(is.not.object(constraints.character_substitutions)) throw new TypeError(subsErrMsg);
-	            for(const c of Object.keys(constraints.character_substitutions)){
-	                if(!XRegExp.match(c, XRegExp('^\\p{Letter}$'))) throw new TypeError(subsErrMsg);
-	                if(is.not.string(constraints.character_substitutions[c])) throw new TypeError(subsErrMsg);
-	            }
+	        if(!(constraints instanceof Config || Config.definesWordConstraints(constraints))){
+	            throw new TypeError('constraints must be an HSXKPasswd Config object or a plain object');
 	        }
 	        const validatedConstraints = {
 	            word_length_min: constraints.word_length_min,
