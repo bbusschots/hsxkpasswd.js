@@ -188,7 +188,7 @@ QUnit.module('HSXKPasswd.Generator Class', function(){
         a.ok(is.string(sep) && sep.length === 1, 'separator_character=RANDOM returns expected value');
     });
     
-    QUnit.test('generate password synchronously', function(a){
+    QUnit.test('static synchronous password generation', function(a){
         a.expect(2);
         
         // make sure the function exists
@@ -218,5 +218,44 @@ QUnit.module('HSXKPasswd.Generator Class', function(){
         // call the constructor with no arguments and make sure it doesn't throw an error
         const defaultConfig = new HSXKPasswd.Generator();
         a.ok(true, 'did not throw error');
+    });
+    
+    QUnit.test('constructor with argumets', function(a){
+        a.expect(4);
+        
+        const conf = new HSXKPasswd.Config();
+        const dict = HSXKPasswd.Dictionary.defaultDictionary();
+        const rng = new HSXKPasswd.RandomNumberSource();
+        
+        // call the constructor with all arguments and make sure it doesn't throw an error
+        const gen = new HSXKPasswd.Generator(conf, dict, rng);
+        a.ok(true, 'did not throw error');
+        
+        // make sure each passed argument was stored
+        a.strictEqual(gen.config, conf, 'config stored correctly');
+        a.strictEqual(gen.dictionary, dict, 'dictionary stored correctly');
+        a.strictEqual(gen.randomNumberSource, rng, 'random number source stored correctly');
+    });
+    
+    QUnit.test('instance synchronous password generation', function(a){
+        a.expect(4);
+        
+        const testGen = new HSXKPasswd.Generator();
+        
+        // make sure the functions exist
+        a.ok(is.function(testGen.passwordSync), '.passwordSync() function exists');
+        a.ok(is.function(testGen.passwordsSync), '.passwordsSync() function exists');
+        
+        // test single password generation
+        const pass = testGen.passwordSync();
+        a.ok(is.string(pass) && is.not.empty(pass), 'successfully generated single password');
+        
+        // test multiple password generation
+        const numPass = 5;
+        const multiPass = testGen.passwordsSync(numPass);
+        a.ok(
+            is.array(multiPass) && multiPass.length === numPass && is.all.string(multiPass),
+            'successfully generated multiple passwords'
+        );
     });
 });

@@ -301,20 +301,55 @@ class Generator{
     }
     
     /**
-     * @param {Config} config - An HSXKPasswd password generation config.
-     * @param {Dictionary} dictionary - The dictionary to use when generating passwords.
-     * @param {RandomNumberSource} randomNumberSource - The source for the random numbers used to generate the passwords.
+     * @param {Config} [config] - An HSXKPasswd password generation config. Defaults to the default config.
+     * @param {Dictionary} [dictionary] - The dictionary to use when generating passwords. Defaults to the default dictionary.
+     * @param {RandomNumberSource} randomNumberSource - The source for the random numbers used to generate the passwords. Defaults to `Math.random()`.
+     * @throws {TypeError} A Type Error is thrown on invalid args.
      */
     constructor(config, dictionary, randomNumberSource){
-        this._config = config;
-        this._dictionary = dictionary;
-        this._randomNumberSource = randomNumberSource;
+        if(is.undefined(config)){
+            this._config = new Config();
+        }else{
+            if(config instanceof Config){
+                this._config = config;
+            }else{
+                throw new TypeError('invalid config');
+            }
+        }
+        if(is.undefined(dictionary)){
+            this._dictionary = Dictionary.defaultDictionary();
+        }else{
+            if(dictionary instanceof Dictionary){
+                this._dictionary = dictionary;
+            }else{
+                throw new TypeError('invalid dictionary');
+            }
+        }
+        if(is.undefined(randomNumberSource)){
+            this._randomNumberSource = new RandomNumberSource();
+        }else{
+            if(randomNumberSource instanceof RandomNumberSource){
+                this._randomNumberSource = randomNumberSource;
+            }else{
+                throw new TypeError('invalid random number source');
+            }
+        }
     }
     
     /**
      * @type {Config}
      */
     get config(){ return this._config; }
+    
+    /**
+     * @type {Dictionary}
+     */
+    get dictionary(){ return this._dictionary; }
+    
+    /**
+     * @type {RandomNuberSource}
+     */
+    get randomNumberSource(){ return this._randomNumberSource; }
     
     /**
      * Generate passwords synchronously.
@@ -324,18 +359,19 @@ class Generator{
      * @throws {TypeError} A Type Error is thrown on invalid args.
      * @throws {Error} An error is thrown if the generator's dictionary is not ready.
      */
-    generatePasswordsSync(n=1){
-        // make sure the dictionary is ready
-        if(!this._dictionary.ready) throw new Error('dictionary not ready');
-        
-        // validate args
-        if(!(is.integer(n) && n > 0)) throw new TypeError('if present, n must be an integer greater than zero');
-        
-        const ans = [];
-        for(let i = 0; i < n; i++){
-            ans.push('PASSWORD');
-        }
-        return ans;
+    passwordsSync(n=1){
+        return this.constructor.generatePasswordsSync(this.config, this.dictionary, this.randomNumberSource, n);
+    }
+    
+    /**
+     * Generate a password synchronously.
+     *
+     * @return {string}
+     * @throws {TypeError} A Type Error is thrown on invalid args.
+     * @throws {Error} An error is thrown if the generator's dictionary is not ready.
+     */
+    passwordSync(){
+        return this.passwordsSync(1)[0];
     }
 }
 
