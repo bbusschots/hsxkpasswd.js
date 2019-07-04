@@ -142,6 +142,56 @@ QUnit.module('HSXKPasswd.Dictionary Class', function(){
             'returns expected words with accents explicitly allowed'
         );
     });
+        
+    QUnit.test('filtered word list caching', function(a){
+        a.expect(8);
+        
+        // create a test dictionary with just a few words of different lengths
+        const testDict = new HSXKPasswd.Dictionary([
+            "poop",
+            "gives",
+            "cliché",
+            "boggers",
+            "Saturday",
+            "vica-versa"
+        ]);
+        a.ok(is.object(testDict.filteredWordsCacheStats), '.filteredWordsCacheStats property exists');
+        a.deepEqual(
+            testDict.filteredWordsCacheStats,
+            {
+                hits: 0,
+                misses: 0,
+                numListsCached: 0
+            },
+            'cache initialised empty'
+        );
+            
+        // test constraints
+        const testConstraints = {
+            word_length_min: 5,
+            word_length_max: 8
+        };
+            
+        // expected word list
+        const expectedWL =  [
+            "Saturday",
+            "boggers",
+            "cliche",
+            "gives"
+        ];
+            
+        // make sure first call is not returned from cache and cached
+        let wl = testDict.filteredWords(testConstraints);
+        a.deepEqual(wl, expectedWL, 'first call returned expected list');
+        a.strictEqual(testDict.filteredWordsCacheStats.misses, 1, 'first call resulted in cache miss');
+        a.strictEqual(testDict.filteredWordsCacheStats.numListsCached, 1, 'first call resulted in list being cached');
+            
+        // make sure second call is returned from cache and not re-cached
+        wl = testDict.filteredWords(testConstraints);
+        a.deepEqual(wl, expectedWL, 'second call returned expected list');
+        a.strictEqual(testDict.filteredWordsCacheStats.hits, 1, 'second call resulted in cache hit');
+        a.strictEqual(testDict.filteredWordsCacheStats.numListsCached, 1, 'second call was not cached again');
+    });
     
     QUnit.test('load words synchronously', function(a){
         a.expect(3);

@@ -34953,6 +34953,11 @@
 	            numRejected: 0,
 	            rejectedWords: []
 	        };
+	        this._filteredWordsCache = {};
+	        this._filteredWordsCacheStats = {
+	            hits: 0,
+	            misses: 0
+	        };
 	        
 	        // process the options
 	        if(is.not.object(options)) throw new TypeError('if passed, options must be an object');
@@ -34986,6 +34991,17 @@
 	     */
 	    get allWords(){
 	        return [...this._words];
+	    }
+	    
+	    /**
+	     * @type {{hits: number, misses: number, numListsCached: number}}
+	     */
+	    get filteredWordsCacheStats(){
+	        return {
+	            hits: this._filteredWordsCacheStats.hits,
+	            misses: this._filteredWordsCacheStats.misses,
+	            numListsCached: Object.keys(this._filteredWordsCache).length
+	        };
 	    }
 	    
 	    /**
@@ -35084,15 +35100,18 @@
 	        if(!this.ready) throw new Error('Dictionary not ready');
 	        
 	        // validate constraints
-	        if(!(constraints instanceof Config || Config.definesWordConstraints(constraints))){
-	            throw new TypeError('constraints must be an HSXKPasswd Config object or a plain object');
+	        const validatedConstraints = Config.wordConstraintsFromObject(constraints); // throws error on invalid object
+	        
+	        // calculate the digest for the word constraints
+	        const constraintsDigest = Config.wordConstraintsDigest(validatedConstraints);
+	        
+	        // check if there is a filtered word list cached, and if so, return a duplicate of the filtered list
+	        if(is.object(this._filteredWordsCache[constraintsDigest]) && is.array(this._filteredWordsCache[constraintsDigest].words)){
+	            this._filteredWordsCacheStats.hits++;
+	            return [...this._filteredWordsCache[constraintsDigest].words];
+	        }else{
+	            this._filteredWordsCacheStats.misses++;
 	        }
-	        const validatedConstraints = {
-	            word_length_min: constraints.word_length_min,
-	            word_length_max: constraints.word_length_max,
-	            allow_accents: is.undefined(constraints.allow_accents) ? false : constraints.allow_accents ? true : false,
-	            character_substitutions: constraints.character_substitutions ? constraints.character_substitutions : {}
-	        };
 	        
 	        // loop through all words, apply any specified substitutions, then test against criteria
 	        const fiteredWords = [];
@@ -35112,6 +35131,13 @@
 	                fiteredWords.push(Dictionary.stripDiacritics(word));
 	            }
 	        }
+	        
+	        // cache the filtered word list
+	        this._filteredWordsCache[constraintsDigest] = {
+	            constraints: validatedConstraints,
+	            constraintsDigest: constraintsDigest,
+	            words: [...fiteredWords]
+	        };
 	        
 	        // return the filtered words
 	        return fiteredWords;
