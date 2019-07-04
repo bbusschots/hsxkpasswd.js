@@ -555,9 +555,9 @@ class Config{
      */
     constructor(settings){
         if(is.undefined(settings)){
-            this._settings = _.cloneDeep(DEFAULT_SETTINGS);
+            this._settings = this.constructor.defaultSettings;
         }else if(this.constructor.definesCompleteConfig(settings)){
-            this._settings = _.cloneDeep(settings);
+            this._settings = this.constructor.settingsFromObject(settings);
         }else{
             throw new TypeError('settings must be a plain object defining a complete and valid configuration');
         }
