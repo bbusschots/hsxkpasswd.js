@@ -34888,6 +34888,15 @@
 	    }
 	    
 	    /**
+	     * Build a Dictionary object from the default word list.
+	     *
+	     * @return {Dictionary}
+	     */
+	    static get defaultDictionary(){
+	        return new Dictionary(DEFAULT_WORD_LIST);
+	    }
+	    
+	    /**
 	     * The base word sanitization function.
 	     *
 	     * This function performs the following actions:
@@ -34907,15 +34916,6 @@
 	        
 	        // return the sanetized string
 	        return output;
-	    }
-	    
-	    /**
-	     * Build a Dictionary object from the default word list.
-	     *
-	     * @return {Dictionary}
-	     */
-	    static defaultDictionary(){
-	        return new Dictionary(DEFAULT_WORD_LIST);
 	    }
 	    
 	    /**
@@ -35819,7 +35819,7 @@
 	    }
 	    
 	    /**
-	     * @param {Config} [config] - An HSXKPasswd password generation config. Defaults to the default config.
+	     * @param {(Config|Object)} [config] - An HSXKPasswd password generation config. Either as an instance of Config, or a plain object. Defaults to the default config.
 	     * @param {Dictionary} [dictionary] - The dictionary to use when generating passwords. Defaults to the default dictionary.
 	     * @param {RandomNumberSource} randomNumberSource - The source for the random numbers used to generate the passwords. Defaults to `Math.random()`.
 	     * @throws {TypeError} A Type Error is thrown on invalid args.
@@ -35830,12 +35830,14 @@
 	        }else{
 	            if(config instanceof Config){
 	                this._config = config;
+	            }else if(Config.definesCompleteConfig(config)){
+	                this._config = new Config(config);
 	            }else{
 	                throw new TypeError('invalid config');
 	            }
 	        }
 	        if(is.undefined(dictionary)){
-	            this._dictionary = Dictionary.defaultDictionary();
+	            this._dictionary = Dictionary.defaultDictionary;
 	        }else{
 	            if(dictionary instanceof Dictionary){
 	                this._dictionary = dictionary;
@@ -35896,27 +35898,27 @@
 	/**
 	 * Generate passwords synchronously.
 	 *
-	 * For now, all passwords are generated using the default config with the default dictionary and default random number source.
-	 *
-	 * @todo Support custom config, dictionary, and random number source
-	 * @param {number} [n=1] - the number of passwords to generate.
+	 * @param {number} [n=1] - The number of passwords to generate.
+	 * @param {Config} [config] - The configuration to use when generating the passwords. The default configuartion will be used if none is passed.
+	 * @param {Dictionary} [dictionary] - The dictionary to use. The default dictionary will be used if none passed.
+	 * @param {RandomNumberSource} [randomNumberSource] - The random number source to use when generating the password. The default random number source will be used is none is passed.
 	 * @return {string[]}
 	 * @throws {TypeError} A Type Error is thrown on invalid args.
 	 */
-	function passwordsSync(n=1){
-	    return (new Generator()).passwordsSync(n);
+	function passwordsSync(n=1, config, dictionary, randomNumberSource){
+	    return (new Generator(config, dictionary, randomNumberSource)).passwordsSync(n);
 	}
 
 	/**
 	 * Generate a single password synchronously.
 	 *
-	 * For now, the password is generated using the default config with the default dictionary and default random number source.
-	 *
-	 * @todo Support custom config, dictionary, and random number source
+	 * @param {Config} [conf] - The configuration to use when generating the passwords. The default configuartion will be used if none is passed.
+	 * @param {Dictionary} [dict] - The dictionary to use. The default dictionary will be used if none passed.
+	 * @param {RandomNumberSource} [rns] - The random number source to use when generating the password. The default random number source will be used is none is passed.
 	 * @return {string[]}
 	 */
-	function passwordSync(){
-	    return passwordsSync(1)[0];
+	function passwordSync(conf, dict, rns){
+	    return passwordsSync(1, conf, dict, rns)[0];
 	}
 
 

@@ -301,7 +301,7 @@ class Generator{
     }
     
     /**
-     * @param {Config} [config] - An HSXKPasswd password generation config. Defaults to the default config.
+     * @param {(Config|Object)} [config] - An HSXKPasswd password generation config. Either as an instance of Config, or a plain object. Defaults to the default config.
      * @param {Dictionary} [dictionary] - The dictionary to use when generating passwords. Defaults to the default dictionary.
      * @param {RandomNumberSource} randomNumberSource - The source for the random numbers used to generate the passwords. Defaults to `Math.random()`.
      * @throws {TypeError} A Type Error is thrown on invalid args.
@@ -312,12 +312,14 @@ class Generator{
         }else{
             if(config instanceof Config){
                 this._config = config;
+            }else if(Config.definesCompleteConfig(config)){
+                this._config = new Config(config);
             }else{
                 throw new TypeError('invalid config');
             }
         }
         if(is.undefined(dictionary)){
-            this._dictionary = Dictionary.defaultDictionary();
+            this._dictionary = Dictionary.defaultDictionary;
         }else{
             if(dictionary instanceof Dictionary){
                 this._dictionary = dictionary;

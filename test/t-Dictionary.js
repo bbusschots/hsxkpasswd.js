@@ -11,10 +11,10 @@ QUnit.module('HSXKPasswd.Dictionary Class', function(){
     QUnit.test('default dictionary builder', function(a){
         a.expect(3);
         
-        a.ok(is.function(HSXKPasswd.Dictionary.defaultDictionary), 'function exists');
+        a.ok(is.object(HSXKPasswd.Dictionary.defaultDictionary), 'static getter exists');
         
         // make sure a dictionary actually gets built
-        const defaultDict = HSXKPasswd.Dictionary.defaultDictionary();
+        const defaultDict = HSXKPasswd.Dictionary.defaultDictionary;
         a.ok(defaultDict instanceof HSXKPasswd.Dictionary, 'generated object is a Dictionary');
         a.ok(defaultDict.allWords.length > 0, 'dictionary contains words');
     });

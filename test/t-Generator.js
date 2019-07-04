@@ -199,7 +199,7 @@ QUnit.module('HSXKPasswd.Generator Class', function(){
         //console.log(testConf);
         
         // a basic dictionary
-        const testDict = HSXKPasswd.Dictionary.defaultDictionary();
+        const testDict = HSXKPasswd.Dictionary.defaultDictionary;
         
         // a basic random number source
         const testRNS = new HSXKPasswd.RandomNumberSource();
@@ -224,7 +224,7 @@ QUnit.module('HSXKPasswd.Generator Class', function(){
         a.expect(4);
         
         const conf = new HSXKPasswd.Config();
-        const dict = HSXKPasswd.Dictionary.defaultDictionary();
+        const dict = HSXKPasswd.Dictionary.defaultDictionary;
         const rng = new HSXKPasswd.RandomNumberSource();
         
         // call the constructor with all arguments and make sure it doesn't throw an error
@@ -257,5 +257,36 @@ QUnit.module('HSXKPasswd.Generator Class', function(){
             is.array(multiPass) && multiPass.length === numPass && is.all.string(multiPass),
             'successfully generated multiple passwords'
         );
+    });
+    
+    QUnit.test('generated password stucture', function(a){
+        a.expect(2);
+        
+        // a default dictionary
+        const testDict = HSXKPasswd.Dictionary.defaultDictionary;
+        
+        // test the structure from the default config
+        const defaultPass = HSXKPasswd.passwordSync(new HSXKPasswd.Config(), testDict);
+        // example: ==12~Bacon~Wicked~Ours~64==
+        a.ok(defaultPass.match(/^.{2}\d{2}.\w{4,8}.\w{4,8}.\w{4,8}.\d{2}.{2}$/), 'default config generates password with expected structure');
+        
+        // test the structire for a custom config
+        const customPass = HSXKPasswd.passwordSync(
+            {
+                allow_accents: 0,
+                case_transform: 'ALTERNATE',
+                num_words: 3,
+                padding_digits_before: 0,
+                padding_digits_after: 3,
+                padding_type: 'NONE',
+                separator_alphabet: [],
+                separator_character: 'RANDOM',
+                symbol_alphabet: ['-', '.'],
+                word_length_min: 4,
+                word_length_max: 8
+            },
+            testDict
+        );
+        a.ok(customPass.match(/^\w{4,8}[-.]\w{4,8}[-.]\w{4,8}[-.]\d{3}$/), 'custom config generates password with expected structure');
     });
 });

@@ -16,6 +16,15 @@ class Dictionary{
     }
     
     /**
+     * Build a Dictionary object from the default word list.
+     *
+     * @return {Dictionary}
+     */
+    static get defaultDictionary(){
+        return new Dictionary(DEFAULT_WORD_LIST);
+    }
+    
+    /**
      * The base word sanitization function.
      *
      * This function performs the following actions:
@@ -35,15 +44,6 @@ class Dictionary{
         
         // return the sanetized string
         return output;
-    }
-    
-    /**
-     * Build a Dictionary object from the default word list.
-     *
-     * @return {Dictionary}
-     */
-    static defaultDictionary(){
-        return new Dictionary(DEFAULT_WORD_LIST);
     }
     
     /**
