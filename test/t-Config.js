@@ -29,6 +29,21 @@ QUnit.module('HSXKPasswd.Config Class', function(){
         a.notDeepEqual(l2, HSXKPasswd.Config.limits, 'editing a copy does not alter the master');
     });
     
+    QUnit.test('static null settings datastructure accessor', function(a){
+        a.expect(3);
+        
+        const ns = HSXKPasswd.Config.nullSettings;
+        
+        // make sure an object is returned
+        a.ok(is.object(ns), '.nullSettings is an object');
+        
+        // make sure each object is a clone, and not just a reference to the same object
+        const ns2 = HSXKPasswd.Config.nullSettings;
+        a.notStrictEqual(ns, ns2, 'a new clone is returned each time');
+        ns2.boogers = 'snot';
+        a.notDeepEqual(ns2, HSXKPasswd.Config.nullSettings, 'editing a copy does not alter the master');
+    });
+    
     QUnit.test('alphabet validation', function(a){
         a.expect(6);
         
@@ -332,6 +347,101 @@ QUnit.module('HSXKPasswd.Config Class', function(){
         // TO DO - MANY more tests!
     });
     
+    QUnit.test('filtering of settings into clean object', function(a){
+        a.expect(2);
+        
+        // make sure the function exists
+        a.ok(is.function(HSXKPasswd.Config.settingsFromObject), 'function settingsFromObject() exists');
+        
+        // the test settings
+        const testObject = {
+            allow_accents: 0,
+            case_transform: 'ALTERNATE',
+            num_words: 3,
+            padding_digits_before: 0,
+            padding_digits_after: 3,
+            padding_type: 'NONE',
+            separator_alphabet: [],
+            separator_character: 'RANDOM',
+            symbol_alphabet: ['-', '.'],
+            word_length_min: 4,
+            word_length_max: 8
+        };
+        const expectedOutput = _.cloneDeep(testObject);
+        expectedOutput.allow_accents = false;
+        testObject.boogers = 'snot';
+        
+        // make sure the filered object has the expected values
+        a.deepEqual(HSXKPasswd.Config.settingsFromObject(testObject), expectedOutput, 'filtered object has expected values');
+    });
+    
+    QUnit.test('filtering of word constraints into clean object', function(a){
+        a.expect(2);
+        
+        // make sure the function exists
+        a.ok(is.function(HSXKPasswd.Config.wordConstraintsFromObject), 'function wordConstraintsFromObject() exists');
+        
+        // the test settings
+        const testObject = {
+            allow_accents: 0,
+            case_transform: 'ALTERNATE',
+            num_words: 3,
+            padding_digits_before: 0,
+            padding_digits_after: 3,
+            padding_type: 'NONE',
+            separator_alphabet: [],
+            separator_character: 'RANDOM',
+            symbol_alphabet: ['-', '.'],
+            word_length_min: 4,
+            word_length_max: 8,
+            boogers: 'snot'
+        };
+        const expectedOutput = {
+            allow_accents: false,
+            character_substitutions: {},
+            word_length_min: 4,
+            word_length_max: 8
+        };
+        
+        // make sure the filered object has the expected values
+        a.deepEqual(HSXKPasswd.Config.wordConstraintsFromObject(testObject), expectedOutput, 'filtered object has expected values');
+    });
+    
+    QUnit.test('generation of word constraints digest', function(a){
+        a.expect(4);
+        
+        // make sure the function exists
+        a.ok(is.function(HSXKPasswd.Config.wordConstraintsDigest), 'function wordConstraintsDigest() exists');
+        
+        // the test settings
+        const testObject = {
+            allow_accents: 0,
+            case_transform: 'ALTERNATE',
+            num_words: 3,
+            padding_digits_before: 0,
+            padding_digits_after: 3,
+            padding_type: 'NONE',
+            separator_alphabet: [],
+            separator_character: 'RANDOM',
+            symbol_alphabet: ['-', '.'],
+            word_length_min: 4,
+            word_length_max: 8,
+            boogers: 'snot'
+        };
+        const expectedOutput = 'f529d6468508f819ffa33ac084eeeaa3';
+        
+        // make sure the filered object has the expected value
+        a.strictEqual(HSXKPasswd.Config.wordConstraintsDigest(testObject), expectedOutput, 'digest has expected value');
+        
+        // make sure a change to representation of allow_accents does not change the digest
+        testObject.allow_accents = false;
+        a.strictEqual(HSXKPasswd.Config.wordConstraintsDigest(testObject), expectedOutput, 'digest has same value for allow_accents=0 and allow_accents=false');
+        
+        // make sure a change in constraints results in a change in digest
+        testObject.word_length_min = 6;
+        a.notStrictEqual(HSXKPasswd.Config.wordConstraintsDigest(testObject), expectedOutput, 'digest changes value for different constraints');
+    });
+    
     QUnit.test('default constructor', function(a){
         a.expect(3);
         
@@ -388,15 +498,8 @@ QUnit.module('HSXKPasswd.Config Class', function(){
         a.ok(true, 'did not throw error');
         
         // make sure the created object has the expected settings
-        const expectedSettings = _.cloneDeep(testSettings);
+        const expectedSettings = _.defaults(_.cloneDeep(testSettings), HSXKPasswd.Config.nullSettings);
         expectedSettings.allow_accents = false;
-        expectedSettings.character_substitutions = {};
-        expectedSettings.pad_to_length = 12;
-        expectedSettings.padding_alphabet = [];
-        expectedSettings.padding_character = '';
-        expectedSettings.padding_characters_before = 0;
-        expectedSettings.padding_characters_after = 0;
-        expectedSettings.separator_alphabet = [];
         a.deepEqual(testConfig.all, expectedSettings, 'generated config with expected settings');
     });
 });

@@ -1,6 +1,7 @@
 import _ from 'lodash-es';
 import is from 'is_js';
 import XRegExp from 'xregexp';
+import md5 from 'md5';
 
 /**
  * The default settings.
@@ -42,6 +43,22 @@ const LIMITS = {
 };
 
 /**
+ * The null values returned by the getters for optional config settings.
+ *
+ * @type {Object}
+ */
+const NULL_SETTINGS = {
+    allow_accents: false,
+    character_substitutions: {},
+    pad_to_length: 12,
+    padding_alphabet: [],
+    padding_character: '',
+    padding_characters_before: 0,
+    padding_characters_after: 0,
+    separator_alphabet: []
+};
+
+/**
  * An HSXKPAsswd Config.
  */
 class Config{
@@ -61,6 +78,15 @@ class Config{
      */
     static get limits(){
         return _.cloneDeep(LIMITS);
+    }
+    
+    /**
+     * The null values returned bt the getters for optional settings.
+     *
+     * @type {Object}
+     */
+    static get nullSettings(){
+        return _.cloneDeep(NULL_SETTINGS);
     }
     
     /**
@@ -441,6 +467,88 @@ class Config{
     }
     
     /**
+     * Build a clean settings object from any object that contains all the keys for a valid configuration. Keys from the original object that do not map to HSXKPasswd settings will not be coppied.
+     *
+     * The returned object will be a deep clone of the original.
+     *
+     * @param {Object} obj - The object to extract the settings from.
+     * @return {Object}
+     * @throws {TypeError} A Type Error is thrown on invalid args.
+     */
+    static settingsFromObject(obj){
+        // validate args
+        this.assertCompleteConfig(obj);
+        
+        // build a clean object to return, starting with the required keys
+        const settingsObj = {
+            case_transform: obj.case_transform,
+            num_words: obj.num_words,
+            padding_digits_before: obj.padding_digits_before,
+            padding_digits_after: obj.padding_digits_after,
+            padding_type: obj.padding_type,
+            separator_character: obj.separator_character,
+            word_length_min: obj.word_length_min,
+            word_length_max: obj.word_length_max
+        };
+        
+        // add any optional keys present in the original
+        if(is.not.undefined(obj.allow_accents)) settingsObj.allow_accents = obj.allow_accents ? true : false;
+        if(is.object(obj.character_substitutions)) settingsObj.character_substitutions = _.cloneDeep(obj.character_substitutions);
+        if(is.not.undefined(obj.pad_to_length)) settingsObj.pad_to_length = obj.pad_to_length;
+        if(is.array(obj.padding_alphabet)) settingsObj.padding_alphabet = _.cloneDeep(obj.padding_alphabet);
+        if(is.not.undefined(obj.padding_character)) settingsObj.padding_character = obj.padding_character;
+        if(is.not.undefined(obj.padding_characters_before)) settingsObj.padding_characters_before = obj.padding_characters_before;
+        if(is.not.undefined(obj.padding_characters_after)) settingsObj.padding_characters_after = obj.padding_characters_after;
+        if(is.array(obj.separator_alphabet)) settingsObj.separator_alphabet = _.cloneDeep(obj.separator_alphabet);
+        if(is.array(obj.symbol_alphabet)) settingsObj.symbol_alphabet = _.cloneDeep(obj.symbol_alphabet);
+        
+        // return the new object
+        return settingsObj;
+    }
+    
+    /**
+     * Generate a digest based on just the word constraints from a given object.
+     *
+     * @param {Object} obj - An object that defines valid word constraints.
+     * @return {string}
+     * @throws {TypeError} A Type Error is thrown on invalid args.
+     */
+    static wordConstraintsDigest(obj){
+        return md5(JSON.stringify(this.wordConstraintsFromObject(obj))); // throws on invalid args
+    }
+    
+    /**
+     * Build a clean word constraints object from any object that defines valid values for all the relevany keys. Keys from the original object other than `allow_accents`, `character_substitutions`, `word_length_min` & `word_length_max` will not be coppied.
+     *
+     * The returned object will be a deep clone of the original.
+     *
+     * @param {Object} obj - The object to extract the settings from.
+     * @return {Object}
+     * @throws {TypeError} A Type Error is thrown on invalid args.
+     */
+    static wordConstraintsFromObject(obj){
+        // validate args
+        this.assertWordConstraints(obj);
+        
+        // build a clean object to return, starting with the required keys
+        const wordCons = {
+            word_length_min: obj.word_length_min,
+            word_length_max: obj.word_length_max
+        };
+        
+        // deal with the optional keys
+        wordCons.allow_accents = obj.allow_accents ? true : false;
+        if(is.object(obj.character_substitutions)){
+            wordCons.character_substitutions = _.cloneDeep(obj.character_substitutions);
+        }else{
+            wordCons.character_substitutions = this.nullSettings.character_substitutions;
+        }
+        
+        // return the new object
+        return wordCons;
+    }
+    
+    /**
      * @param {Object} [settings] - The config settings. If no object is passed the default settings are used.
      * @throws {TypeError} - A type error is thrown if invalid args are passed.
      * @todo Validate settings
@@ -503,7 +611,7 @@ class Config{
         if(is.object(this._settings.character_substitutions)){
             return _.cloneDeep(this._settings.character_substitutions);
         }
-        return {};
+        return this.constructor.nullSettings.character_substitutions;
     }
     get characterSubstitutions(){ return this.character_substitutions; }
     
@@ -519,7 +627,7 @@ class Config{
      * @type {number}
      */
     get pad_to_length(){
-        return this._settings.pad_to_length || 12;
+        return this._settings.pad_to_length || this.constructor.nullSettings.pad_to_length;
     }
     get padToLength(){ return this.pad_to_length; }
     
@@ -530,7 +638,7 @@ class Config{
         if(is.array(this._settings.padding_alphabet)){
             return _.clone(this._settings.padding_alphabet);
         }
-        return [];
+        return this.constructor.nullSettings.padding_alphabet;
     }
     get paddingAlphabet(){ return this.padding_alphabet; }
     
@@ -538,7 +646,7 @@ class Config{
      * @type {String}
      */
     get padding_character(){
-        return this._settings.padding_character || '';
+        return this._settings.padding_character || this.constructor.nullSettings.padding_character;
     }
     get paddingCharacter(){ return this.padding_character; }
     
@@ -546,7 +654,7 @@ class Config{
      * @type {number}
      */
     get padding_characters_before(){
-        return this._settings.padding_characters_before || 0;
+        return this._settings.padding_characters_before || this.constructor.nullSettings.padding_characters_before;
     }
     get paddingCharactersBefore(){ return this.padding_characters_before; }
     
@@ -554,7 +662,7 @@ class Config{
      * @type {number}
      */
     get padding_characters_after(){
-        return this._settings.padding_characters_after || 0;
+        return this._settings.padding_characters_after || this.constructor.nullSettings.padding_characters_before;
     }
     get paddingCharactersAfter(){ return this.padding_characters_after; }
     
@@ -562,7 +670,7 @@ class Config{
      * @type {number}
      */
     get padding_digits_before(){
-        return this._settings.padding_digits_before || 0;
+        return this._settings.padding_digits_before;
     }
     get paddingDigitsBefore(){ return this.padding_digits_before; };
     
@@ -570,7 +678,7 @@ class Config{
      * @type {number}
      */
     get padding_digits_after(){
-        return this._settings.padding_digits_after || 0;
+        return this._settings.padding_digits_after;
     }
     get paddingDigitsAfter(){ return this.padding_digits_after; }
     
@@ -589,7 +697,7 @@ class Config{
         if(is.array(this._settings.separator_alphabet)){
             return _.clone(this._settings.separator_alphabet);
         }
-        return [];
+        return this.constructor.nullSettings.separator_alphabet;
     }
     get separatorAlphabet(){ return this.separator_alphabet; }
     
@@ -608,7 +716,7 @@ class Config{
         if(is.array(this._settings.symbol_alphabet)){
             return _.clone(this._settings.symbol_alphabet);
         }
-        return [];
+        return this.constructor.nullSettings.symbol_alphabet;
     }
     
     /**
