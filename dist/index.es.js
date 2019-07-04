@@ -25592,6 +25592,20 @@ class Config{
     }
     
     /**
+     * @type {Object}
+     */
+    get wordConstraints(){
+        return this.constructor.wordConstraintsFromObject(this.all);
+    }
+    
+    /**
+     * @type {string}
+     */
+    get wordConstraintsDigest(){
+        return this.constructor.wordConstraintsDigest(this.all);
+    }
+    
+    /**
      * @type {number}
      */
     get word_length_min(){

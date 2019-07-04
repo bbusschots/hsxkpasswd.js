@@ -376,12 +376,9 @@ QUnit.module('HSXKPasswd.Config Class', function(){
     });
     
     QUnit.test('filtering of word constraints into clean object', function(a){
-        a.expect(2);
+        a.expect(4);
         
-        // make sure the function exists
-        a.ok(is.function(HSXKPasswd.Config.wordConstraintsFromObject), 'function wordConstraintsFromObject() exists');
-        
-        // the test settings
+        // test settings & instance
         const testObject = {
             allow_accents: 0,
             case_transform: 'ALTERNATE',
@@ -396,24 +393,27 @@ QUnit.module('HSXKPasswd.Config Class', function(){
             word_length_max: 8,
             boogers: 'snot'
         };
+        const testInstance = new HSXKPasswd.Config(testObject);
+        
+        // make sure the function exists
+        a.ok(is.function(HSXKPasswd.Config.wordConstraintsFromObject), 'static wordConstraintsFromObject() function exists');
+        a.ok(is.object(testInstance.wordConstraints), 'instance property .wordConstraints exists');
+        
+        // test the output
         const expectedOutput = {
             allow_accents: false,
             character_substitutions: {},
             word_length_min: 4,
             word_length_max: 8
         };
-        
-        // make sure the filered object has the expected values
-        a.deepEqual(HSXKPasswd.Config.wordConstraintsFromObject(testObject), expectedOutput, 'filtered object has expected values');
+        a.deepEqual(HSXKPasswd.Config.wordConstraintsFromObject(testObject), expectedOutput, 'static function returns expected output');
+        a.deepEqual(testInstance.wordConstraints, expectedOutput, 'instance property has expected value');
     });
     
     QUnit.test('generation of word constraints digest', function(a){
-        a.expect(4);
+        a.expect(6);
         
-        // make sure the function exists
-        a.ok(is.function(HSXKPasswd.Config.wordConstraintsDigest), 'function wordConstraintsDigest() exists');
-        
-        // the test settings
+        // the test settings & instance
         const testObject = {
             allow_accents: 0,
             case_transform: 'ALTERNATE',
@@ -428,10 +428,18 @@ QUnit.module('HSXKPasswd.Config Class', function(){
             word_length_max: 8,
             boogers: 'snot'
         };
+        const testInstance = new HSXKPasswd.Config(testObject);
+        
+        // make sure the function exists
+        a.ok(is.function(HSXKPasswd.Config.wordConstraintsDigest), 'static wordConstraintsDigest() function exists');
+        a.ok(is.string(testInstance.wordConstraintsDigest), 'instance property .wordConstraintsDigest exists');
+        
+        // test the ouptut from the static function and instance getter
         const expectedOutput = 'f529d6468508f819ffa33ac084eeeaa3';
         
-        // make sure the filered object has the expected value
-        a.strictEqual(HSXKPasswd.Config.wordConstraintsDigest(testObject), expectedOutput, 'digest has expected value');
+        // make sure the digested object has the expected value
+        a.strictEqual(HSXKPasswd.Config.wordConstraintsDigest(testObject), expectedOutput, 'static digest function returns expected value');
+        a.strictEqual(testInstance.wordConstraintsDigest, expectedOutput, 'instance digest property has expected value');
         
         // make sure a change to representation of allow_accents does not change the digest
         testObject.allow_accents = false;
