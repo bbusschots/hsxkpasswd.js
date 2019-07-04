@@ -1,7 +1,7 @@
 {
-  "name": "@bartificer/hsxkpasswd",
+  "name": "hsxkpasswd",
   "version": "1.0.0",
-  "description": "A JavaScript port of the Perl module Crypt::HSXKPasswd",
+  "description": "A basic JavaScript port of the Perl module Crypt::HSXKPasswd",
   "main": "dist/index.js",
   "module": "dist/index.es.js",
   "files": [
