@@ -1,3 +1,4 @@
+import _ from 'lodash-es';
 import diacritics from 'diacritics';
 import is from 'is_js';
 import XRegExp from 'xregexp';

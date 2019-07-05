@@ -35002,7 +35002,7 @@ class Dictionary{
      * @type {Object}
      */
     get lastLoadStats(){
-        return _.cloneDeep(this._lastLoadStats);
+        return lodash.cloneDeep(this._lastLoadStats);
     }
     
     /**
@@ -35070,7 +35070,7 @@ class Dictionary{
         }
         
         // sort and de-duplicate the words
-        ans.words = _.uniq(ans.words);
+        ans.words = lodash.uniq(ans.words);
         ans.words.sort();
         
         // return the result
@@ -35179,7 +35179,7 @@ class Dictionary{
         this._wordsPromise = Promise.resolve(wordList.words);
         
         // return the stats
-        return _.cloneDeep(stats);
+        return lodash.cloneDeep(stats);
     }
     
     /**
@@ -35230,7 +35230,7 @@ class Dictionary{
         this._loadInProgress = false;
         
         // return the stats
-        return _.cloneDeep(stats);
+        return lodash.cloneDeep(stats);
     }
     
     /**

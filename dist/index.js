@@ -35008,7 +35008,7 @@
 	     * @type {Object}
 	     */
 	    get lastLoadStats(){
-	        return _.cloneDeep(this._lastLoadStats);
+	        return lodash.cloneDeep(this._lastLoadStats);
 	    }
 	    
 	    /**
@@ -35076,7 +35076,7 @@
 	        }
 	        
 	        // sort and de-duplicate the words
-	        ans.words = _.uniq(ans.words);
+	        ans.words = lodash.uniq(ans.words);
 	        ans.words.sort();
 	        
 	        // return the result
@@ -35185,7 +35185,7 @@
 	        this._wordsPromise = Promise.resolve(wordList.words);
 	        
 	        // return the stats
-	        return _.cloneDeep(stats);
+	        return lodash.cloneDeep(stats);
 	    }
 	    
 	    /**
@@ -35236,7 +35236,7 @@
 	        this._loadInProgress = false;
 	        
 	        // return the stats
-	        return _.cloneDeep(stats);
+	        return lodash.cloneDeep(stats);
 	    }
 	    
 	    /**
