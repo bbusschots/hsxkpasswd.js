@@ -14,11 +14,13 @@ When using NodeJS:
 npm install hsxkpasswd
 ```
 
-For use in web browsers:
+For use in web browsers (latest version from NPM via [JSDelivr CDN](https://www.jsdelivr.com/package/npm/hsxkpasswd)):
 
 ```
-<script src="TO DO"></script>
+<script src="https://cdn.jsdelivr.net/npm/hsxkpasswd@1.0.0/dist/index.min.js"></script>
 ```
+
+[![](https://data.jsdelivr.com/v1/package/npm/hsxkpasswd/badge)](https://www.jsdelivr.com/package/npm/hsxkpasswd)
 
 ## Basic Usage
 
